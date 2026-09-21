@@ -1,0 +1,653 @@
+ts,cluster_count,market_id,question,tag,days_to_end,volume,bid,ask,mid,ask_depth2
+2026-09-21 08:08,2,3956905,Iran-Oman Hormuz Agreement by September 21?,geopolitics,0.7,131589,0.002,0.01,0.006,10.24
+2026-09-21 08:08,2,3702045,"US announces end of Iranian blockade by September 21, 2026?",geopolitics,0.8,1392193,0.005,0.006,0.0055,222.36
+2026-09-21 08:08,1,4619163,Saudi Oil Pipeline (East-West) restarts by September 22?,geopolitics,1.8,182754,0.04,0.05,0.045,1083.77
+2026-09-21 08:08,3,4688836,Saudi-Houthi ceasefire agreement announced by September 23?,geopolitics,2.8,4753,0.015,0.027,0.021,10.93
+2026-09-21 08:08,1,3902433,Will Russia enter Moskovka by September 30?,geopolitics,8.8,9443,0.09,0.1,0.095,17.26
+2026-09-21 08:08,1,3711104,"Will Iran target Oman by September 30, 2026?",geopolitics,9.5,28601,0.016,0.046,0.031,65.35
+2026-09-21 08:08,2,4639440,"Saudi Arabia military action against Iran by September 30, 2026?",geopolitics,9.5,1012,0.013,0.076,0.0445,6.36
+2026-09-21 08:08,2,3145330,"Will Iran target Ukraine by September 30, 2026?",geopolitics,9.5,171340,0.004,0.006,0.005,16.18
+2026-09-21 08:08,2,3701663,Israel military action against Yemen by September 30?,geopolitics,9.5,109789,0.024,0.032,0.028,226.54
+2026-09-21 08:08,2,3710796,"Will Iran target Saudi Arabia by September 30, 2026?",geopolitics,9.5,9536,0.041,0.068,0.0545,18.58
+2026-09-21 08:08,2,3710805,"Will Iran target Egypt by September 30, 2026?",geopolitics,9.5,15322,0.005,0.017,0.011,4.25
+2026-09-21 08:08,2,3710811,"Will Iran target Syria by September 30, 2026?",geopolitics,9.5,20305,0.014,0.053,0.0335,5.1
+2026-09-21 08:08,2,3902322,"Ukraine strikes another tanker in the Caspian Sea by September 30, 2026?",geopolitics,9.5,3357,0.012,0.057,0.0345,2.16
+2026-09-21 08:08,2,3902338,"Will there be Houthi military action against Israel by September 30, 2026?",geopolitics,9.5,53297,0.019,0.028,0.0235,527.13
+2026-09-21 08:08,1,3902514,Israel military action against Greater Beirut by September 30?,geopolitics,9.5,28373,0.04,0.05,0.045,536.5
+2026-09-21 08:08,1,3902562,Israeli forces enter Tyre by September 30?,geopolitics,9.5,1833,0.005,0.049,0.027,137.41
+2026-09-21 08:08,1,3902787,Israeli forces enter Nabatieh by September 30?,geopolitics,9.5,115893,0.02,0.032,0.026,1.65
+2026-09-21 08:08,1,3903009,Israeli forces enter Choukine by September 30?,geopolitics,9.5,3022,0.01,0.022,0.016,1.07
+2026-09-21 08:08,2,4424731,"Pakistan military action against Yemen by September 30, 2026?",geopolitics,9.5,7087,0.024,0.058,0.041,16.96
+2026-09-21 08:08,1,4603350,"France, UK, or Germany military action against Yemen by September 30, 2026?",geopolitics,9.5,1437,0.032,0.089,0.0605,1.12
+2026-09-21 08:08,1,4640130,"Houthi military action against Mecca by September 30, 2026?",geopolitics,9.5,1497,0.002,0.004,0.003,0.51
+2026-09-21 08:08,1,2849420,Will Strait of Hormuz traffic return to normal in September?,geopolitics,9.7,21118,,0.003,0.003,27.47
+2026-09-21 08:08,1,2859599,Iran agrees to end enrichment of uranium by September 30?,geopolitics,9.7,73907,0.005,0.015,0.01,106.58
+2026-09-21 08:08,1,3399471,"Total Internet Blackout in Iran by September 30, 2026?",geopolitics,9.7,6892,0.003,0.01,0.0065,4.58
+2026-09-21 08:08,1,3764797,Will there be exactly 1 North Korea test in September 2026?,geopolitics,9.7,12433,0.007,0.033,0.02,25.09
+2026-09-21 08:08,1,3914763,Will Trump speak to Reza Pahlavi in September?,geopolitics,9.7,2235,0.013,0.033,0.023,11.38
+2026-09-21 08:08,2,3914780,Will Trump speak to Pope Leo XIV in September?,geopolitics,9.7,4004,0.07,0.1,0.085,63.36
+2026-09-21 08:08,2,3914781,Will Trump speak to Mojtaba Khamenei in September?,geopolitics,9.7,1433,0.002,0.028,0.015,2.23
+2026-09-21 08:08,1,3915285,Will there be between 35 and 39 average daily transits of the Bab el-Mandeb Strait on Sept,geopolitics,9.7,4036,0.019,0.069,0.044,22.77
+2026-09-21 08:08,1,3915286,Will there be 40 or more average daily transits of the Bab el-Mandeb Strait on September 3,geopolitics,9.7,3447,0.005,0.025,0.015,3.37
+2026-09-21 08:08,1,3940888,"Will at least 20 ships transit the Strait of Hormuz on any day by September 30, 2026?",geopolitics,9.7,4916,0.04,0.057,0.0485,31.48
+2026-09-21 08:08,1,3940889,"Will at least 30 ships transit the Strait of Hormuz on any day by September 30, 2026?",geopolitics,9.7,7946,0.017,0.032,0.0245,10.42
+2026-09-21 08:08,1,3940890,"Will at least 40 ships transit the Strait of Hormuz on any day by September 30, 2026?",geopolitics,9.7,3002,0.014,0.034,0.024,12.65
+2026-09-21 08:08,1,3940891,"Will at least 50 ships transit the Strait of Hormuz on any day by September 30, 2026?",geopolitics,9.7,1358,0.01,0.034,0.022,9.12
+2026-09-21 08:08,1,3940894,Will there be between 10 and 15 average daily transits of the Strait of Hormuz on Septembe,geopolitics,9.7,6198,0.01,0.029,0.0195,17.57
+2026-09-21 08:08,1,3940895,Will there be between 15 and 20 average daily transits of the Strait of Hormuz on Septembe,geopolitics,9.7,2505,0.001,0.006,0.0035,3.23
+2026-09-21 08:08,1,3940896,Will there be between 20 and 25 average daily transits of the Strait of Hormuz on Septembe,geopolitics,9.7,2428,0.001,0.008,0.0045,4.33
+2026-09-21 08:08,1,3940897,Will there be between 25 and 30 average daily transits of the Strait of Hormuz on Septembe,geopolitics,9.7,6066,0.001,0.008,0.0045,2.67
+2026-09-21 08:08,1,3940898,Will there be 30 or more average daily transits of the Strait of Hormuz on September 30?,geopolitics,9.7,2526,0.009,0.02,0.0145,0.7
+2026-09-21 08:08,3,4175134,Israel x Lebanon Effective Ceasefire by September 30?,geopolitics,9.7,3734,0.023,0.073,0.048,84.98
+2026-09-21 08:08,3,1633606,"Will China invade Taiwan by September 30, 2026?",geopolitics,9.8,2166969,0.004,0.005,0.0045,96.45
+2026-09-21 08:08,1,1795596,Will the U.S. test a nuclear weapon by September 30 2026?,geopolitics,9.8,58194,0.006,0.013,0.0095,61.43
+2026-09-21 08:08,2,1796338,Will Russia test a nuclear weapon by September 30 2026?,geopolitics,9.8,159521,0.006,0.013,0.0095,8.87
+2026-09-21 08:08,1,1918966,Ukraine peace referendum scheduled by September 30?,geopolitics,9.8,22954,0.006,0.011,0.0085,16.12
+2026-09-21 08:08,1,2107988,Will Russia capture all of Vovchansk by September 30?,geopolitics,9.8,56150,0.031,0.043,0.037,54.45
+2026-09-21 08:08,1,2125369,"Will Russia capture all of Stepnohirsk by September 30, 2026?",geopolitics,9.8,1327612,0.01,0.011,0.0105,2.59
+2026-09-21 08:08,1,2125379,"Will Russia capture all of Prymorske by September 30, 2026?",geopolitics,9.8,112625,0.005,0.023,0.014,16.07
+2026-09-21 08:08,1,2125425,"Will Russia capture Prymorske by September 30, 2026?",geopolitics,9.8,50311,0.003,0.014,0.0085,1.55
+2026-09-21 08:08,1,2170255,Bab el-Mandeb Strait effectively closed by September 30?,geopolitics,9.8,3599081,0.019,0.02,0.0195,746.55
+2026-09-21 08:08,1,2318064,"Will Russia capture Mala Tokmachka by September 30, 2026?",geopolitics,9.8,304385,0.04,0.05,0.045,115.39
+2026-09-21 08:08,1,2318106,"Will Russia capture Orikhiv by September 30, 2026?",geopolitics,9.8,203931,0.01,0.011,0.0105,39.11
+2026-09-21 08:08,1,2318182,Will Russia capture all of Chasiv Yar by September 30?,geopolitics,9.8,69218,0.08,0.1,0.09,69.26
+2026-09-21 08:08,2,2365030,Trump meets with Putin by September 30?,geopolitics,9.8,119540,0.006,0.013,0.0095,26.29
+2026-09-21 08:08,1,2373340,"Will Russia capture Kupiansk by September 30, 2026?",geopolitics,9.8,121198,0.013,0.021,0.017,8.1
+2026-09-21 08:08,2,2591183,"Russia-Ukraine peace talks by September 30, 2026?",geopolitics,9.8,369262,0.038,0.048,0.043,98.43
+2026-09-21 08:08,2,2641011,"Israel withdraws from Lebanon by September 30, 2026?",geopolitics,9.8,265372,0.003,0.01,0.0065,94.39
+2026-09-21 08:08,1,2646915,"Will the next diplomatic US-Iran meeting be in Oman by September 30, 2026?",geopolitics,9.8,433369,,0.001,0.001,12.71
+2026-09-21 08:08,2,2646916,"Will the next diplomatic US-Iran meeting be in the UAE by September 30, 2026?",geopolitics,9.8,106324,,0.001,0.001,31.3
+2026-09-21 08:08,2,2646917,"Will the next diplomatic US-Iran meeting be in Saudi Arabia by September 30, 2026?",geopolitics,9.8,107021,,0.001,0.001,63.87
+2026-09-21 08:08,2,2646918,"Will the next diplomatic US-Iran meeting be in Qatar by September 30, 2026?",geopolitics,9.8,736328,0.002,0.004,0.003,36.1
+2026-09-21 08:08,1,2646919,"Will the next diplomatic US-Iran meeting be in Switzerland by September 30, 2026?",geopolitics,9.8,605286,0.002,0.004,0.003,47.26
+2026-09-21 08:08,1,2646920,"Will the next diplomatic US-Iran meeting be in Austria by September 30, 2026?",geopolitics,9.8,332706,,0.001,0.001,17.07
+2026-09-21 08:08,2,2646921,"Will the next diplomatic US-Iran meeting be in Turkey by September 30, 2026?",geopolitics,9.8,109225,,0.001,0.001,15.69
+2026-09-21 08:08,1,2646922,"Will the next diplomatic US-Iran meeting be in Iran by September 30, 2026?",geopolitics,9.8,200166,,0.001,0.001,60.0
+2026-09-21 08:08,2,2646924,"Will the next diplomatic US-Iran meeting be in Egypt by September 30, 2026?",geopolitics,9.8,89589,,0.001,0.001,67.9
+2026-09-21 08:08,1,2646925,"Will the next diplomatic US-Iran meeting be in Italy by September 30, 2026?",geopolitics,9.8,154378,,0.001,0.001,83.11
+2026-09-21 08:08,2,2646926,"Will the next diplomatic US-Iran meeting be in Iraq by September 30, 2026?",geopolitics,9.8,111154,,0.001,0.001,52.59
+2026-09-21 08:08,1,2646927,"Will the next diplomatic US-Iran meeting be in Kazakhstan by September 30, 2026?",geopolitics,9.8,187960,,0.001,0.001,42.37
+2026-09-21 08:08,2,2646928,"Will the next diplomatic US-Iran meeting be in Pakistan by September 30, 2026?",geopolitics,9.8,379538,0.003,0.007,0.005,44.32
+2026-09-21 08:08,2,2646929,"Will the next diplomatic US-Iran meeting be in Russia by September 30, 2026?",geopolitics,9.8,210844,,0.001,0.001,39.69
+2026-09-21 08:08,1,2646930,Will the next diplomatic US-Iran meeting be in another Middle East/North Africa country by,geopolitics,9.8,139440,,0.001,0.001,32.91
+2026-09-21 08:08,1,2646931,"Will the next diplomatic US-Iran meeting be in another European country by September 30, 2",geopolitics,9.8,114988,,0.001,0.001,19.7
+2026-09-21 08:08,1,2646932,"Will the next diplomatic US-Iran meeting be in another country by September 30, 2026?",geopolitics,9.8,653030,,0.002,0.002,18.95
+2026-09-21 08:08,1,2658303,Mojtaba Khamenei seen in public by September 30?,geopolitics,9.8,439293,0.02,0.023,0.0215,512.55
+2026-09-21 08:08,1,2676277,"Will Russia capture Lyman by September 30, 2026?",geopolitics,9.8,127825,0.013,0.025,0.019,41.51
+2026-09-21 08:08,1,2676506,"Will Russia capture all of Kostyantynivka by September 30, 2026?",geopolitics,9.8,227381,0.018,0.028,0.023,160.55
+2026-09-21 08:08,1,2676651,Will Russia capture Stavky by September 30?,geopolitics,9.8,30860,0.019,0.031,0.025,83.64
+2026-09-21 08:08,1,2676754,Will Russia capture Rai-Oleksandrivka by September 30?,geopolitics,9.8,30781,0.011,0.029,0.02,11.21
+2026-09-21 08:08,1,2676762,Will Russia enter Krasnopillya by September 30?,geopolitics,9.8,44456,0.028,0.066,0.047,7.55
+2026-09-21 08:08,1,2676821,"Will Russia enter Havrylivka by September 30, 2026?",geopolitics,9.8,41901,0.03,0.031,0.0305,60.54
+2026-09-21 08:08,1,2676954,Will Ukraine re-enter Kamianske by September 30?,geopolitics,9.8,19400,0.021,0.038,0.0295,71.18
+2026-09-21 08:08,1,2677018,Will Russia enter Stavky by September 30?,geopolitics,9.8,48747,0.05,0.08,0.065,198.45
+2026-09-21 08:08,1,2677019,Will Russia capture Dovha Balka by September 30?,geopolitics,9.8,43116,0.044,0.08,0.062,4.34
+2026-09-21 08:08,1,2677035,Will Russia capture Huliaipilske by September 30?,geopolitics,9.8,32004,0.014,0.04,0.027,59.67
+2026-09-21 08:08,1,2677052,Will Russia enter Borova by September 30?,geopolitics,9.8,17946,0.01,0.017,0.0135,0.25
+2026-09-21 08:08,1,2677060,Will Russia capture Kindrativka by September 30?,geopolitics,9.8,27642,0.02,0.03,0.025,12.02
+2026-09-21 08:08,1,2677089,"Will Russia capture Havrylivka by September 30, 2026?",geopolitics,9.8,153454,0.01,0.02,0.015,5.33
+2026-09-21 08:08,2,2696746,"US-Iran Final Nuclear Deal by September 30, 2026?",geopolitics,9.8,1710249,0.005,0.006,0.0055,609.03
+2026-09-21 08:08,1,2730675,Iran leadership change by September 30?,geopolitics,9.8,1502198,0.012,0.013,0.0125,3691.22
+2026-09-21 08:08,1,2737255,Will the Iranian regime fall by September 30?,geopolitics,9.8,2419920,0.003,0.005,0.004,619.77
+2026-09-21 08:08,1,2737426,"Will Russia capture Bilytske by September 30, 2026?",geopolitics,9.8,111399,0.03,0.06,0.045,37.58
+2026-09-21 08:08,1,2745548,"Will Russia capture Kozacha Lopan by September 30, 2026?",geopolitics,9.8,41041,0.04,0.06,0.05,29.76
+2026-09-21 08:08,1,2757753,US obtains Iranian enriched uranium by September 30?,geopolitics,9.8,167481,0.003,0.004,0.0035,56.7
+2026-09-21 08:08,1,2774057,Strait of Hormuz traffic returns to normal by September 30?,geopolitics,9.8,9183207,0.005,0.006,0.0055,1540.36
+2026-09-21 08:08,2,2822005,"Putin out as President of Russia by September 30, 2026?",geopolitics,9.8,1434662,0.003,0.004,0.0035,270.14
+2026-09-21 08:08,1,2846148,"Will Russia capture Oleksiievo-Druzhkivka by September 30, 2026?",geopolitics,9.8,159817,0.008,0.025,0.0165,47.1
+2026-09-21 08:08,1,2865996,"Mohammed Ghalibaf out as Speaker of Iran Parliament by September 30, 2026?",geopolitics,9.8,9130,0.012,0.023,0.0175,15.09
+2026-09-21 08:08,1,2866013,"Abbas Araghchi out as Minister of Foreign Affairs of Iran by September 30, 2026?",geopolitics,9.8,23827,0.012,0.021,0.0165,10.68
+2026-09-21 08:08,1,2925991,Will Russia capture Kupiansk-Vuzlovyi by September 30?,geopolitics,9.8,85486,0.027,0.045,0.036,38.75
+2026-09-21 08:08,1,2928889,Will Russia capture Novodmytrivka by September 30?,geopolitics,9.8,32591,0.026,0.038,0.032,51.65
+2026-09-21 08:08,1,3089430,Will Russia capture Vodianske by September 30?,geopolitics,9.8,53848,0.022,0.049,0.0355,89.44
+2026-09-21 08:08,1,3092025,"Will Ukraine re-enter Rodynske by September 30, 2026?",geopolitics,9.8,145715,0.024,0.047,0.0355,72.38
+2026-09-21 08:08,1,3128298,Foreign intervention in Gaza by September 30?,geopolitics,9.8,155545,0.02,0.025,0.0225,639.35
+2026-09-21 08:08,2,3207084,U.S. x Russia Nuclear deal by September 30?,geopolitics,9.8,28132,0.014,0.03,0.022,9.76
+2026-09-21 08:08,2,3215074,Kharg Island no longer under Iranian control by September 30?,geopolitics,9.8,1691715,0.005,0.006,0.0055,217.91
+2026-09-21 08:08,1,3241325,Will Russia capture Verkhnia Tersa by September 30?,geopolitics,9.8,57316,0.016,0.029,0.0225,6.49
+2026-09-21 08:08,3,3350268,"Will Farsi, Hengam, Hormuz or Kharg Island no longer be under Iranian control by September",geopolitics,9.8,103316,0.009,0.01,0.0095,41.28
+2026-09-21 08:08,2,3399473,Iran charges Hormuz fees by September 30?,geopolitics,9.8,187047,0.017,0.027,0.022,445.09
+2026-09-21 08:08,1,3564683,Will Ukraine re-enter Uspenivka by September 30?,geopolitics,9.8,34373,0.003,0.029,0.016,4.77
+2026-09-21 08:08,1,3564692,Will Ukraine re-enter Obratne or Temyrivka by September 30?,geopolitics,9.8,25877,0.024,0.05,0.037,54.2
+2026-09-21 08:08,2,3701662,US-Iran Hormuz Agreement by September 30?,geopolitics,9.8,264051,0.068,0.093,0.0805,59.85
+2026-09-21 08:08,1,3708871,"Will Russia capture the Royal Café Alex in Kostyantynivka by September 30, 2026?",geopolitics,9.8,13541,0.031,0.04,0.0355,67.94
+2026-09-21 08:08,2,3860598,"Will Russia announce a new forced mobilization by September 30, 2026?",geopolitics,9.8,113458,0.045,0.049,0.047,116.25
+2026-09-21 08:08,1,3889223,US imposes new sanctions on China by September 30?,geopolitics,9.8,7654,0.04,0.1,0.07,0.5
+2026-09-21 08:08,1,3903113,Abu Musa Island no longer under Iranian control by September 30?,geopolitics,9.8,3655,0.013,0.054,0.0335,92.6
+2026-09-21 08:08,1,3903137,Hengam Island no longer under Iranian control by September 30?,geopolitics,9.8,2633,0.002,0.01,0.006,0.48
+2026-09-21 08:08,1,3903140,Farsi Island no longer under Iranian control by September 30?,geopolitics,9.8,21191,0.002,0.008,0.005,2.08
+2026-09-21 08:08,2,3914601,Will Trump meet with Kim Jong Un in September 2026?,geopolitics,9.8,12455,0.002,0.003,0.0025,28.99
+2026-09-21 08:08,1,3914604,Will Trump meet with Mohammed bin Salman in September 2026?,geopolitics,9.8,7173,0.022,0.07,0.046,36.92
+2026-09-21 08:08,2,3914605,Will Trump meet with Vladimir Putin in September 2026?,geopolitics,9.8,30138,0.006,0.015,0.0105,91.38
+2026-09-21 08:08,1,3914606,Will Trump meet with Keir Starmer in September 2026?,geopolitics,9.8,1451,0.003,0.021,0.012,5.64
+2026-09-21 08:08,1,3914608,Will Trump meet with Giorgia Meloni in September 2026?,geopolitics,9.8,7925,0.036,0.054,0.045,89.92
+2026-09-21 08:08,1,3914611,Will Trump meet with Joseph Aoun in September 2026?,geopolitics,9.8,7872,0.06,0.09,0.075,25.45
+2026-09-21 08:08,1,3914612,Will Trump meet with Miguel Díaz-Canel in September 2026?,geopolitics,9.8,2139,0.001,0.004,0.0025,0.24
+2026-09-21 08:08,1,4155345,Venezuelan oil added to Strategic Petroleum Reserve by September 30?,geopolitics,9.8,1151,0.002,0.006,0.004,0.52
+2026-09-21 08:08,1,4338163,Will Israeli forces withdraw from beyond the Litani River by September 30?,geopolitics,9.8,9960,0.003,0.011,0.007,26.45
+2026-09-21 08:08,1,4451521,"Houthis enter Aden by September 30, 2026?",geopolitics,9.8,158474,0.04,0.05,0.045,1255.67
+2026-09-21 08:08,1,4451607,"Houthis seize an oil tanker by September 30, 2026?",geopolitics,9.8,46155,0.039,0.048,0.0435,519.56
+2026-09-21 08:08,3,4475805,Trump invokes war powers in Yemen by September 30?,geopolitics,9.8,46403,0.062,0.088,0.075,14.21
+2026-09-21 08:08,1,4477141,0 ships transit Bab el-Mandeb on any date by September 30?,geopolitics,9.8,3429,0.015,0.043,0.029,105.05
+2026-09-21 08:08,2,4487263,Will the Houthis enter Saudi Arabia by September 30?,geopolitics,9.8,7533,0.013,0.062,0.0375,90.13
+2026-09-21 08:08,2,4487705,"Saudi troops fighting in Yemen by September 30, 2026?",geopolitics,9.8,4978,0.079,0.088,0.0835,29.15
+2026-09-21 08:08,2,4599794,"Israeli airspace closed by September 30, 2026?",geopolitics,9.8,23547,0.039,0.058,0.0485,494.64
+2026-09-21 08:08,1,4640847,Perim Island no longer under Houthi control by September 30?,geopolitics,9.8,1730,0.003,0.075,0.039,2.25
+2026-09-21 08:08,3,4688837,Saudi-Houthi ceasefire agreement announced by September 30?,geopolitics,9.8,6748,0.06,0.07,0.065,162.73
+2026-09-21 08:08,1,4712086,Will Trump visit Greenland by September 30?,geopolitics,9.8,1514,0.006,0.029,0.0175,10.87
+2026-09-21 08:08,1,4713961,"Russia military action against an EU country by September 30, 2026?",geopolitics,9.8,7761,0.021,0.03,0.0255,394.15
+2026-09-21 08:08,2,4743421,Will Saudi airspace be closed by September 30?,geopolitics,9.8,3745,0.05,0.06,0.055,73.94
+2026-09-21 08:08,2,4627142,Will Trump and Xi kiss at their summit?,geopolitics,16.8,3074,0.006,0.01,0.008,228.85
+2026-09-21 08:08,2,4627145,Will Trump and Xi hug at their summit?,geopolitics,16.8,4861,0.05,0.07,0.06,147.9
+2026-09-21 08:08,1,637002,Will Donald Trump win the Nobel Peace Prize in 2026?,geopolitics,18.7,4950144,0.021,0.023,0.022,2847.9
+2026-09-21 08:08,1,637003,Will Pope Leo XIV win the Nobel Peace Prize in 2026?,geopolitics,18.7,823497,0.005,0.012,0.0085,45.54
+2026-09-21 08:08,1,637011,Will Volodymyr Zelenskyy win the Nobel Peace Prize in 2026?,geopolitics,18.7,825328,0.015,0.02,0.0175,52.01
+2026-09-21 08:08,1,637013,Will Vladimir Putin win the Nobel Peace Prize in 2026?,geopolitics,18.7,922576,0.001,0.002,0.0015,49.11
+2026-09-21 08:08,1,637015,Will Benjamin Netanyahu win the Nobel Peace Prize in 2026?,geopolitics,18.7,712440,0.002,0.004,0.003,57.76
+2026-09-21 08:08,1,637017,Will Xi Jinping win the Nobel Peace Prize in 2026?,geopolitics,18.7,1436387,0.004,0.006,0.005,133.65
+2026-09-21 08:08,1,637021,Will Narendra Modi win the Nobel Peace Prize in 2026?,geopolitics,18.7,689090,0.012,0.013,0.0125,363.84
+2026-09-21 08:08,2,4424732,"Pakistan military action against Yemen by October 31, 2026?",geopolitics,40.5,5289,0.07,0.1,0.085,15.93
+2026-09-21 08:08,1,4640131,"Houthi military action against Mecca by October 31, 2026?",geopolitics,40.5,1047,0.06,0.09,0.075,20.97
+2026-09-21 08:08,3,2264327,"Russia x Ukraine ceasefire by October 31, 2026?",geopolitics,40.6,708236,0.04,0.05,0.045,4001.87
+2026-09-21 08:08,1,3902371,Will a European country take military action on Iran by October 31?,geopolitics,40.6,2143,0.031,0.045,0.038,93.31
+2026-09-21 08:08,1,2849421,Will Strait of Hormuz traffic return to normal in October?,geopolitics,40.7,12241,0.057,0.059,0.058,50.38
+2026-09-21 08:08,3,2243896,"Russia x Ukraine ceasefire agreement by October 31, 2026?",geopolitics,40.8,1679706,0.06,0.07,0.065,1098.09
+2026-09-21 08:08,1,2853114,"IAEA visits Isfahan, Fordow, or Natanz nuclear site by October 31?",geopolitics,40.8,84571,0.03,0.04,0.035,175.74
+2026-09-21 08:08,1,2853134,"Iran agrees to surrender enriched uranium stockpile by October 31, 2026?",geopolitics,40.8,35442,0.016,0.022,0.019,402.17
+2026-09-21 08:08,1,3372765,"Will Ukraine re-enter Huliaipole by October 31, 2026?",geopolitics,40.8,22423,0.07,0.09,0.08,29.77
+2026-09-21 08:08,1,3399450,Iran leadership change by October 31?,geopolitics,40.8,118847,0.04,0.05,0.045,5416.41
+2026-09-21 08:08,2,3491459,"US-Iran Final Nuclear Deal by October 31, 2026?",geopolitics,40.8,282538,0.029,0.046,0.0375,38.78
+2026-09-21 08:08,1,3501950,Strait of Hormuz traffic returns to normal by October 31?,geopolitics,40.8,753963,0.06,0.07,0.065,1158.72
+2026-09-21 08:08,1,3517858,"Will Russia capture all of Kostyantynivka by October 31, 2026?",geopolitics,40.8,47243,0.06,0.07,0.065,332.05
+2026-09-21 08:08,1,3764664,Mojtaba Khamenei seen in public by October 31?,geopolitics,40.8,16594,0.07,0.08,0.075,155.72
+2026-09-21 08:08,1,3764738,"Will Russia capture Mykolaivka by October 31, 2026?",geopolitics,40.8,3315,0.021,0.03,0.0255,80.52
+2026-09-21 08:08,1,3862799,"Will Russia capture Dobropillia by October 31, 2026?",geopolitics,40.8,2271,0.03,0.05,0.04,59.41
+2026-09-21 08:08,3,3903076,Iran invades Kuwait by October 31?,geopolitics,40.8,7988,0.028,0.077,0.0525,11.62
+2026-09-21 08:08,2,3913254,Ukraine signs peace deal with Russia by October 31?,geopolitics,40.8,12448,0.014,0.03,0.022,50.8
+2026-09-21 08:08,1,4338162,Will Israeli forces withdraw from beyond the Litani River by October 31?,geopolitics,40.8,3839,0.061,0.062,0.0615,517.53
+2026-09-21 08:08,1,4712085,Will Trump visit Greenland by October 31?,geopolitics,40.8,8254,0.08,0.1,0.09,663.12
+2026-09-21 08:08,1,2849422,Will Strait of Hormuz traffic return to normal in November?,geopolitics,70.7,10034,0.032,0.053,0.0425,41.16
+2026-09-21 08:08,1,3399451,Iran leadership change by November 30?,geopolitics,70.9,47659,0.08,0.09,0.085,7506.27
+2026-09-21 08:08,2,3491438,"US-Iran Final Nuclear Deal by November 30, 2026?",geopolitics,70.9,37409,0.08,0.09,0.085,1530.22
+2026-09-21 08:08,1,666579,Will Trump deport less than 200k people?,geopolitics,100.7,10589,0.011,0.021,0.016,15.28
+2026-09-21 08:08,1,666580,Will Trump deport 200-300k people?,geopolitics,100.7,9864,0.003,0.01,0.0065,0.06
+2026-09-21 08:08,1,666581,Will Trump deport 300-400k people?,geopolitics,100.7,15103,0.08,0.1,0.09,10.65
+2026-09-21 08:08,1,666584,Will Trump deport 600-700k people?,geopolitics,100.7,5767,0.013,0.024,0.0185,32.81
+2026-09-21 08:08,1,666585,Will Trump deport 700-800k people?,geopolitics,100.7,41938,0.011,0.015,0.013,9.68
+2026-09-21 08:08,1,666586,Will Trump deport 800-900k people?,geopolitics,100.7,12882,0.003,0.018,0.0105,15.33
+2026-09-21 08:08,1,666587,Will Trump deport 900k-1m people?,geopolitics,100.7,6629,0.003,0.013,0.008,4.02
+2026-09-21 08:08,1,666588,Will Trump deport more than 1m people?,geopolitics,100.7,7178,0.004,0.018,0.011,5.78
+2026-09-21 08:08,1,682706,Will Naftali Bennett be the next Prime Minister of Israel?,geopolitics,100.7,3168248,0.08,0.09,0.085,4078.49
+2026-09-21 08:08,1,682707,Will Yair Lapid be the next Prime Minister of Israel?,geopolitics,100.7,1603376,,0.001,0.001,304.89
+2026-09-21 08:08,1,682709,Will Benny Gantz be the next Prime Minister of Israel?,geopolitics,100.7,2247015,,0.001,0.001,414.33
+2026-09-21 08:08,1,682710,Will Avigdor Lieberman be the next Prime Minister of Israel?,geopolitics,100.7,2718297,0.041,0.045,0.043,672.09
+2026-09-21 08:08,1,682711,Will Yossi Cohen be the next Prime Minister of Israel?,geopolitics,100.7,2696010,0.002,0.003,0.0025,470.79
+2026-09-21 08:08,2,682712,Will Yair Golan be the next Prime Minister of Israel?,geopolitics,100.7,2372242,0.002,0.003,0.0025,842.57
+2026-09-21 08:08,1,682713,Will Itamar Ben Gvir be the next Prime Minister of Israel?,geopolitics,100.7,1585053,0.005,0.006,0.0055,372.4
+2026-09-21 08:08,1,682714,Will Gideon Sa’ar be the next Prime Minister of Israel?,geopolitics,100.7,2295595,,0.001,0.001,326.96
+2026-09-21 08:08,1,682715,Will Yariv Levin be the next Prime Minister of Israel?,geopolitics,100.7,1897920,,0.001,0.001,131.87
+2026-09-21 08:08,1,682716,Will Moshe Feiglin be the next Prime Minister of Israel?,geopolitics,100.7,1927278,,0.001,0.001,321.43
+2026-09-21 08:08,1,682717,Will Ayelet Shaked be the next Prime Minister of Israel?,geopolitics,100.7,1859104,,0.001,0.001,424.79
+2026-09-21 08:08,1,682718,Will Yoaz Hendel be the next Prime Minister of Israel?,geopolitics,100.7,1645909,0.002,0.003,0.0025,528.33
+2026-09-21 08:08,1,682719,Will Israel Katz be the next Prime Minister of Israel?,geopolitics,100.7,844482,,0.001,0.001,219.72
+2026-09-21 08:08,1,682720,Will Nir Barkat be the next Prime Minister of Israel?,geopolitics,100.7,1581660,,0.001,0.001,216.97
+2026-09-21 08:08,1,682721,Will Amir Ohana be the next Prime Minister of Israel?,geopolitics,100.7,2567515,0.001,0.002,0.0015,736.53
+2026-09-21 08:08,1,682722,Will Gilad Erdan be the next Prime Minister of Israel?,geopolitics,100.7,721993,,0.001,0.001,190.98
+2026-09-21 08:08,1,682723,Will Ofer Winter be the next Prime Minister of Israel?,geopolitics,100.7,281863,0.012,0.018,0.015,233.49
+2026-09-21 08:08,1,1105740,Will Edmundo González be the leader of Venezuela end of 2026?,geopolitics,100.7,1290768,0.001,0.002,0.0015,412.77
+2026-09-21 08:08,1,1105741,Will María Corina Machado be the leader of Venezuela end of 2026?,geopolitics,100.7,1517975,,0.001,0.001,47.66
+2026-09-21 08:08,1,1105743,Will Diosdado Cabello Rondón be the leader of Venezuela end of 2026?,geopolitics,100.7,2126510,,0.001,0.001,249.72
+2026-09-21 08:08,1,1105745,Will Dinorah Figuera be the leader of Venezuela end of 2026?,geopolitics,100.7,3001708,,0.001,0.001,379.51
+2026-09-21 08:08,2,1105746,Will Donald Trump be the leader of Venezuela end of 2026?,geopolitics,100.7,1148161,,0.001,0.001,169.14
+2026-09-21 08:08,1,1105747,Will Vladimir Padrino López be the leader of Venezuela end of 2026?,geopolitics,100.7,874972,0.001,0.002,0.0015,155.28
+2026-09-21 08:08,1,1105748,Will Marco Rubio be the leader of Venezuela end of 2026?,geopolitics,100.7,1472369,0.001,0.002,0.0015,325.63
+2026-09-21 08:08,1,1105749,Will Jorge Rodríguez be the leader of Venezuela end of 2026?,geopolitics,100.7,1220529,0.001,0.002,0.0015,211.96
+2026-09-21 08:08,1,1105750,Will Pete Hegseth be the leader of Venezuela end of 2026?,geopolitics,100.7,9259683,0.001,0.002,0.0015,429.29
+2026-09-21 08:08,1,1105751,Will Evan Pettus be the leader of Venezuela end of 2026?,geopolitics,100.7,5655655,,0.001,0.001,398.74
+2026-09-21 08:08,1,1105752,Will Frank Donovan be the leader of Venezuela end of 2026?,geopolitics,100.7,25848135,0.001,0.002,0.0015,422.56
+2026-09-21 08:08,1,1105753,Will Dan Caine be the leader of Venezuela end of 2026?,geopolitics,100.7,4154186,,0.001,0.001,140.11
+2026-09-21 08:08,1,1105754,Will Richard Grenell be the leader of Venezuela end of 2026?,geopolitics,100.7,32790723,,0.001,0.001,134.77
+2026-09-21 08:08,1,1105755,Will there be no head of state of Venezuela end of 2026?,geopolitics,100.7,1592694,0.005,0.006,0.0055,156.5
+2026-09-21 08:08,1,1469734,Will there be no Head of State in Iran end of 2026?,geopolitics,100.7,1162049,0.046,0.05,0.048,70.72
+2026-09-21 08:08,1,1469735,Will Muhammad Mirbaqiri be head of state in Iran end of 2026?,geopolitics,100.7,461994,0.001,0.002,0.0015,127.22
+2026-09-21 08:08,1,1469736,Will Sadegh Larijani be head of state in Iran end of 2026?,geopolitics,100.7,563115,,0.001,0.001,142.01
+2026-09-21 08:08,1,1469738,Will Hassan Khomeini be head of state in Iran end of 2026?,geopolitics,100.7,1443798,0.002,0.003,0.0025,56.28
+2026-09-21 08:08,1,1469739,Will Reza Pahlavi be head of state in Iran end of 2026?,geopolitics,100.7,687457,0.023,0.03,0.0265,1495.05
+2026-09-21 08:08,1,1469740,Will Hassan Shariatmadari be head of state in Iran end of 2026?,geopolitics,100.7,3157756,,0.001,0.001,70.03
+2026-09-21 08:08,1,1469741,Will Maryam Rajavi be head of state in Iran end of 2026?,geopolitics,100.7,864867,,0.001,0.001,102.1
+2026-09-21 08:08,1,1469742,Will Massoud Rajavi be head of state in Iran end of 2026?,geopolitics,100.7,406939,,0.002,0.002,121.63
+2026-09-21 08:08,1,1469743,Will Seyed Hossein Mousavian be head of state in Iran end of 2026?,geopolitics,100.7,3694989,,0.001,0.001,69.79
+2026-09-21 08:08,1,1469744,Will Reza Pirzadeh be head of state in Iran end of 2026?,geopolitics,100.7,155679,,0.001,0.001,56.65
+2026-09-21 08:08,1,1469745,Will Navid Shomali be head of state in Iran end of 2026?,geopolitics,100.7,228205,0.001,0.002,0.0015,81.06
+2026-09-21 08:08,1,1469746,Will Mustafa Hijri be head of state in Iran end of 2026?,geopolitics,100.7,206808,,0.001,0.001,47.76
+2026-09-21 08:08,1,1469747,Will Ali Motahari be head of state in Iran end of 2026?,geopolitics,100.7,859577,0.001,0.002,0.0015,57.09
+2026-09-21 08:08,1,1469748,Will Gholam-Ali Haddad-Adel be head of state in Iran end of 2026?,geopolitics,100.7,441490,0.001,0.002,0.0015,83.05
+2026-09-21 08:08,1,1469749,Will Mostafa Pourmohammadi be head of state in Iran end of 2026?,geopolitics,100.7,3360621,,0.001,0.001,43.48
+2026-09-21 08:08,1,1469750,Will Sadegh Mahsouli be head of state in Iran end of 2026?,geopolitics,100.7,244071,,0.001,0.001,94.28
+2026-09-21 08:08,1,1469751,Will Masoud Pezeshkian be head of state in Iran end of 2026?,geopolitics,100.7,1023896,0.003,0.004,0.0035,37.56
+2026-09-21 08:08,1,1469752,Will Saeed Jalili be head of state in Iran end of 2026?,geopolitics,100.7,399096,,0.001,0.001,44.0
+2026-09-21 08:08,1,1469753,Will Hassan Rouhani be head of state in Iran end of 2026?,geopolitics,100.7,948612,0.008,0.009,0.0085,109.69
+2026-09-21 08:08,1,1469754,Will Mahmoud Ahmadinejad be head of state in Iran end of 2026?,geopolitics,100.7,1131815,0.018,0.019,0.0185,41.27
+2026-09-21 08:08,1,1469755,Will Mohammad Khatami be head of state in Iran end of 2026?,geopolitics,100.7,5215128,,0.001,0.001,57.78
+2026-09-21 08:08,1,1469758,Will Alireza Arafi be head of state in Iran end of 2026?,geopolitics,100.7,2320954,0.005,0.009,0.007,52.8
+2026-09-21 08:08,1,1469760,Will Abbas Araghchi be head of state in Iran end of 2026?,geopolitics,100.7,835241,0.002,0.003,0.0025,72.57
+2026-09-21 08:08,1,1469761,Will Ahmad Vahidi be head of state in Iran end of 2026?,geopolitics,100.7,780911,0.002,0.003,0.0025,30.65
+2026-09-21 08:08,1,1469762,Will Mohsen Araki be head of state in Iran end of 2026?,geopolitics,100.7,295040,,0.001,0.001,46.02
+2026-09-21 08:08,1,1469763,Will Nasir Hosseini be head of state in Iran end of 2026?,geopolitics,100.7,267607,,0.001,0.001,52.88
+2026-09-21 08:08,1,1469764,Will Ahmad Hosseini Khorasani be head of state in Iran end of 2026?,geopolitics,100.7,314518,,0.001,0.001,51.73
+2026-09-21 08:08,1,1469765,Will Ali Asghar Hejazi be head of state in Iran end of 2026?,geopolitics,100.7,353629,,0.001,0.001,51.95
+2026-09-21 08:08,1,1469766,Will Mohammad-Bagher Ghalibaf be head of state in Iran end of 2026?,geopolitics,100.7,923733,0.004,0.005,0.0045,62.03
+2026-09-21 08:08,1,1115288,US recognizes Reza Pahlavi as leader of Iran in 2026?,geopolitics,101.4,637733,0.044,0.051,0.0475,110.85
+2026-09-21 08:08,2,2105920,UAE x Saudi Arabia sever diplomatic relations in 2026?,geopolitics,101.5,114161,0.041,0.042,0.0415,170.05
+2026-09-21 08:08,2,2105921,UAE x Qatar sever diplomatic relations in 2026?,geopolitics,101.5,350027,0.05,0.058,0.054,344.28
+2026-09-21 08:08,1,2106193,Will UAE leave the Gulf Cooperation Council  in 2026?,geopolitics,101.5,100938,0.05,0.07,0.06,124.68
+2026-09-21 08:08,1,3902374,Will a European country take military action on Iran by December 31?,geopolitics,101.6,1829,0.06,0.09,0.075,119.38
+2026-09-21 08:08,1,2849423,Will Strait of Hormuz traffic return to normal in December?,geopolitics,101.7,21306,0.07,0.08,0.075,379.9
+2026-09-21 08:08,3,4148956,Iran blockade lifted before Xi visits US?,geopolitics,101.7,4164,0.002,0.009,0.0055,0.45
+2026-09-21 08:08,1,559651,Xi Jinping out before 2027?,geopolitics,101.9,13714746,0.037,0.038,0.0375,22841.58
+2026-09-21 08:08,2,560317,"Putin out as President of Russia by December 31, 2026?",geopolitics,101.9,21869123,0.04,0.05,0.045,32706.67
+2026-09-21 08:08,3,567621,Will China invade Taiwan by end of 2026?,geopolitics,101.9,42511388,0.039,0.04,0.0395,11816.29
+2026-09-21 08:08,2,567689,Zelenskyy out as Ukraine president by end of 2026?,geopolitics,101.9,3226575,0.06,0.07,0.065,5108.94
+2026-09-21 08:08,1,663583,Will the Iranian regime fall before 2027?,geopolitics,101.9,26201124,0.06,0.07,0.065,34050.32
+2026-09-21 08:08,2,665218,Israel and Saudi Arabia normalize relations before 2027?,geopolitics,101.9,436382,0.07,0.1,0.085,156.34
+2026-09-21 08:08,1,665243,NATO article 5 before 2027?,geopolitics,101.9,245305,0.056,0.083,0.0695,92.13
+2026-09-21 08:08,1,665258,Will China unban Bitcoin by 2027?,geopolitics,101.9,1085657,0.024,0.027,0.0255,290.94
+2026-09-21 08:08,1,665262,Will Donald Trump visit Mexico in 2026?,geopolitics,101.9,6048,0.04,0.09,0.065,4.63
+2026-09-21 08:08,2,665269,Will Donald Trump visit Ukraine in 2026?,geopolitics,101.9,7355,0.05,0.09,0.07,1.16
+2026-09-21 08:08,2,665270,Will Donald Trump visit Taiwan in 2026?,geopolitics,101.9,86652,0.033,0.059,0.046,16.8
+2026-09-21 08:08,1,665273,Will Donald Trump visit Oman in 2026?,geopolitics,101.9,3481,0.013,0.049,0.031,2.47
+2026-09-21 08:08,2,665274,Will Donald Trump visit India in 2026?,geopolitics,101.9,15085,0.06,0.09,0.075,1.89
+2026-09-21 08:08,2,665275,Will Donald Trump visit Belarus in 2026?,geopolitics,101.9,4561,0.011,0.059,0.035,41.81
+2026-09-21 08:08,1,665318,Will Trump sell 101-1k Gold Cards in 2026?,geopolitics,101.9,41423,0.036,0.037,0.0365,5.68
+2026-09-21 08:08,1,665319,Will Trump sell 1k-2.5k Gold Cards in 2026?,geopolitics,101.9,11376,0.005,0.017,0.011,1.28
+2026-09-21 08:08,1,665320,Will Trump sell 2.5k-5k Gold Cards in 2026?,geopolitics,101.9,11094,0.003,0.007,0.005,3.75
+2026-09-21 08:08,1,665321,Will Trump sell 5k-10k Gold Cards in 2026?,geopolitics,101.9,11989,0.003,0.027,0.015,27.52
+2026-09-21 08:08,1,665322,Will Trump sell 10k-25k Gold Cards in 2026?,geopolitics,101.9,116872,0.016,0.017,0.0165,39.41
+2026-09-21 08:08,1,665323,Will Trump sell 25k-100k Gold Cards in 2026?,geopolitics,101.9,11454,0.005,0.029,0.017,14.59
+2026-09-21 08:08,1,665324,Will Trump sell over 100k Gold Cards in 2026?,geopolitics,101.9,26118,0.038,0.06,0.049,7.79
+2026-09-21 08:08,2,665353,Ukraine agrees not to join NATO before 2027? ,geopolitics,101.9,155537,0.06,0.07,0.065,107.43
+2026-09-21 08:08,2,665373,U.S. recognizes Russian sovereignty over Crimea before 2027? ,geopolitics,101.9,74720,0.041,0.043,0.042,67.13
+2026-09-21 08:08,1,665410,Will Ukraine agree to give up the rest of Donbas before 2027?,geopolitics,101.9,150433,0.028,0.046,0.037,76.55
+2026-09-21 08:08,2,665414,Israel and Lebanon normalize relations before 2027?,geopolitics,101.9,239015,0.07,0.1,0.085,22.58
+2026-09-21 08:08,3,665459,Will North Korea invade South Korea before 2027?,geopolitics,101.9,444848,0.028,0.029,0.0285,31.25
+2026-09-21 08:08,2,665464,"Kim Jong Un out as Supreme Leader of North Korea by December 31, 2026?",geopolitics,101.9,196770,0.039,0.049,0.044,213.93
+2026-09-21 08:08,1,665471,Will Kuwait join the Abraham Accords before 2027?,geopolitics,101.9,76142,0.09,0.1,0.095,70.0
+2026-09-21 08:08,1,665472,Will Syria join the Abraham Accords before 2027?,geopolitics,101.9,164512,0.061,0.075,0.068,98.75
+2026-09-21 08:08,1,665473,Will Lebanon join the Abraham Accords before 2027?,geopolitics,101.9,77035,0.07,0.09,0.08,253.04
+2026-09-21 08:08,1,665474,Will Saudi Arabia join the Abraham Accords before 2027?,geopolitics,101.9,349276,0.08,0.09,0.085,2071.62
+2026-09-21 08:08,1,665475,Will Azerbaijan join the Abraham Accords before 2027?,geopolitics,101.9,175784,0.048,0.049,0.0485,128.02
+2026-09-21 08:08,1,665480,Will US withdraw from NATO before 2027?,geopolitics,101.9,1312737,0.019,0.028,0.0235,37.18
+2026-09-21 08:08,1,665485,U.S. forces in Gaza before 2027?,geopolitics,101.9,186031,0.06,0.08,0.07,29.21
+2026-09-21 08:08,2,665495,Ukraine joins NATO before 2027?,geopolitics,101.9,1250956,0.034,0.051,0.0425,68.54
+2026-09-21 08:08,2,665515,Will Israel annex West Bank territory before 2027?,geopolitics,101.9,90952,0.05,0.06,0.055,284.91
+2026-09-21 08:08,2,665521,Iran nuclear test before 2027?,geopolitics,101.9,262068,0.049,0.05,0.0495,316.0
+2026-09-21 08:08,1,665738,"Ahmed al-Sharaa out as leader of Syria by December 31, 2026?",geopolitics,101.9,70578,0.07,0.08,0.075,64.99
+2026-09-21 08:08,1,666599,Will Trump meet with Lai Ching-te in 2026?,geopolitics,101.9,35472,0.035,0.036,0.0355,130.08
+2026-09-21 08:08,1,666602,Will Trump meet with MrBeast in 2026?,geopolitics,101.9,15141,0.07,0.08,0.075,250.7
+2026-09-21 08:08,1,666603,Will Trump meet with Jair Bolsonaro in 2026?,geopolitics,101.9,69968,0.05,0.06,0.055,192.91
+2026-09-21 08:08,1,666604,Will Trump meet with Yoon Suk Yeol in 2026?,geopolitics,101.9,96340,0.02,0.025,0.0225,43.21
+2026-09-21 08:08,1,666606,Will Trump meet with iShowSpeed in 2026?,geopolitics,101.9,24843,0.038,0.039,0.0385,128.9
+2026-09-21 08:08,2,666610,Will Trump meet with Pope Leo XIV in 2026?,geopolitics,101.9,30347,0.031,0.047,0.039,140.22
+2026-09-21 08:08,1,666612,Will Trump meet with Changpeng Zhao in 2026?,geopolitics,101.9,45825,0.08,0.09,0.085,92.5
+2026-09-21 08:08,2,666613,Will Trump meet with Nicolás Maduro in 2026?,geopolitics,101.9,12973,0.04,0.05,0.045,166.8
+2026-09-21 08:08,1,666821,"U.S. agrees to a new trade deal with ""Japan"" before 2027?",geopolitics,101.9,17780,0.022,0.082,0.052,2.94
+2026-09-21 08:08,1,666861,Trump out as President before 2027?,geopolitics,101.9,11772468,0.05,0.06,0.055,8337.22
+2026-09-21 08:08,3,667076,Will Zelenskyy and Putin meet next in Turkey before 2027?,geopolitics,101.9,226276,0.003,0.006,0.0045,11.78
+2026-09-21 08:08,3,667077,Will Zelenskyy and Putin meet next in Russia before 2027?,geopolitics,101.9,212433,0.003,0.004,0.0035,31.01
+2026-09-21 08:08,2,667078,Will Zelenskyy and Putin meet next in Italy / Vatican before 2027?,geopolitics,101.9,124865,0.003,0.006,0.0045,58.92
+2026-09-21 08:08,3,667079,Will Zelenskyy and Putin meet next in Ukraine before 2027?,geopolitics,101.9,236434,0.003,0.008,0.0055,23.47
+2026-09-21 08:08,3,667080,Will Zelenskyy and Putin meet next in China before 2027?,geopolitics,101.9,116543,0.003,0.006,0.0045,154.54
+2026-09-21 08:08,4,667081,Will Zelenskyy and Putin meet next in Qatar / UAE before 2027?,geopolitics,101.9,488161,0.004,0.007,0.0055,90.45
+2026-09-21 08:08,3,667082,Will Zelenskyy and Putin meet next in Saudi Arabia before 2027?,geopolitics,101.9,151819,0.003,0.006,0.0045,150.25
+2026-09-21 08:08,2,667083,Will Zelenskyy and Putin meet next in US before 2027?,geopolitics,101.9,484079,0.007,0.017,0.012,43.47
+2026-09-21 08:08,2,667084,Will Zelenskyy and Putin meet next in Hungary before 2027?,geopolitics,101.9,121312,0.001,0.002,0.0015,37.21
+2026-09-21 08:08,3,667085,Will Zelenskyy  and Putin meet next in Belarus before 2027?,geopolitics,101.9,328771,0.002,0.004,0.003,23.4
+2026-09-21 08:08,2,667088,Will Zelenskyy and Putin meet next in Switzerland before 2027?,geopolitics,101.9,239110,0.008,0.016,0.012,17.6
+2026-09-21 08:08,3,667089,Will Zelenskyy and Putin meet next in India before 2027?,geopolitics,101.9,243755,0.001,0.002,0.0015,43.68
+2026-09-21 08:08,2,667091,Will Zelenskyy and Putin meet next in Kazakhstan before 2027?,geopolitics,101.9,144440,0.001,0.002,0.0015,28.33
+2026-09-21 08:08,1,677358,"Ukraine election held by December 31, 2026?",geopolitics,101.9,237726,0.013,0.019,0.016,4.13
+2026-09-21 08:08,2,677367,China coup attempt before 2027?,geopolitics,101.9,158892,0.041,0.06,0.0505,42.5
+2026-09-21 08:08,1,677375,Will Russia rejoin the G7 before 2027?,geopolitics,101.9,53563,0.023,0.024,0.0235,4.2
+2026-09-21 08:08,1,677394,"Modi out by December 31, 2026?",geopolitics,101.9,252676,0.068,0.069,0.0685,84.91
+2026-09-21 08:08,1,677396,Iran Nuke before 2027?,geopolitics,101.9,1311527,0.042,0.043,0.0425,423.9
+2026-09-21 08:08,2,677403,US recognizes Russian sovereignty over Ukraine before 2027?,geopolitics,101.9,188976,0.026,0.029,0.0275,70.06
+2026-09-21 08:08,2,677404,"China x India military clash by December 31, 2026?",geopolitics,101.9,220069,0.06,0.07,0.065,383.52
+2026-09-21 08:08,2,677407,China x Taiwan military clash before 2027?,geopolitics,101.9,3425142,0.055,0.066,0.0605,1857.86
+2026-09-21 08:08,2,678749,Will Israel strike 6 countries in 2026?,geopolitics,101.9,652682,0.031,0.048,0.0395,23.39
+2026-09-21 08:08,2,678750,Will Israel strike 7 countries in 2026?,geopolitics,101.9,619480,0.014,0.033,0.0235,21.22
+2026-09-21 08:08,2,678751,Will Israel strike 8 countries in 2026?,geopolitics,101.9,530995,0.01,0.039,0.0245,3.08
+2026-09-21 08:08,2,678752,Will Israel strike 9 countries in 2026?,geopolitics,101.9,237493,0.006,0.018,0.012,31.14
+2026-09-21 08:08,2,678753,Will Israel strike 10 countries in 2026?,geopolitics,101.9,401354,0.011,0.024,0.0175,63.88
+2026-09-21 08:08,2,678754,Will Israel strike 11 countries in 2026?,geopolitics,101.9,143326,0.001,0.002,0.0015,10.89
+2026-09-21 08:08,2,678755,Will Israel strike 12 countries in 2026?,geopolitics,101.9,229049,0.002,0.009,0.0055,50.34
+2026-09-21 08:08,2,678756,Will Israel strike 13 countries in 2026?,geopolitics,101.9,355068,0.002,0.006,0.004,31.04
+2026-09-21 08:08,2,678757,Will Israel strike 14 countries in 2026?,geopolitics,101.9,192611,0.003,0.005,0.004,33.63
+2026-09-21 08:08,2,678758,Will Israel strike 15 or more countries in 2026?,geopolitics,101.9,195567,0.008,0.049,0.0285,3.88
+2026-09-21 08:08,1,678779,Will the US strike 10 countries in 2026?,geopolitics,101.9,30732,0.02,0.027,0.0235,9.34
+2026-09-21 08:08,1,678780,Will the US strike 11 countries in 2026?,geopolitics,101.9,29710,0.005,0.029,0.017,5.5
+2026-09-21 08:08,1,678781,Will the US strike 12 countries in 2026?,geopolitics,101.9,50199,0.003,0.015,0.009,7.96
+2026-09-21 08:08,1,678782,Will the US strike 13 countries in 2026?,geopolitics,101.9,103733,0.003,0.007,0.005,62.14
+2026-09-21 08:08,1,678783,Will the US strike 14 countries in 2026?,geopolitics,101.9,152420,0.001,0.003,0.002,22.24
+2026-09-21 08:08,1,678784,Will the US strike 15 or more countries in 2026?,geopolitics,101.9,130852,0.001,0.002,0.0015,20.53
+2026-09-21 08:08,2,681144,Will Ukraine agree to cede territory to Russia before 2027?,geopolitics,101.9,756127,0.06,0.08,0.07,702.32
+2026-09-21 08:08,2,687642,China x Japan military clash before 2027?,geopolitics,101.9,1373949,0.05,0.06,0.055,656.46
+2026-09-21 08:08,1,688427,Will Trump meet with Nick Fuentes in 2026?,geopolitics,101.9,94548,0.016,0.022,0.019,16.95
+2026-09-21 08:08,1,693519,Ukraine agrees to limit size of armed forces before 2027?,geopolitics,101.9,116102,0.04,0.06,0.05,40.32
+2026-09-21 08:08,2,694027,Russia x Ukraine Peace Combo,geopolitics,101.9,620294,0.05,0.06,0.055,211.91
+2026-09-21 08:08,3,950123,"Trump, Putin, and Zelensky seen together before 2027?",geopolitics,101.9,94719,0.05,0.07,0.06,397.67
+2026-09-21 08:08,3,950145,"Trump, Putin, and Zelensky meet together before 2027?",geopolitics,101.9,50452,0.06,0.08,0.07,424.0
+2026-09-21 08:08,1,1059730,Ukraine peace referendum passed before 2027?,geopolitics,101.9,68934,0.022,0.033,0.0275,83.28
+2026-09-21 08:08,1,1100291,Will Venezuela become 51st state?,geopolitics,101.9,394988,0.023,0.025,0.024,51.47
+2026-09-21 08:08,1,1107381,US strike on Mexico by December 31?,geopolitics,101.9,735639,0.09,0.1,0.095,33.21
+2026-09-21 08:08,2,1107878,Will the U.S. invade Cuba in 2026?,geopolitics,101.9,3354599,0.06,0.07,0.065,3195.99
+2026-09-21 08:08,1,1108137,Will the U.S. invade a Latin American country in 2026?,geopolitics,101.9,277069,0.06,0.07,0.065,0.12
+2026-09-21 08:08,1,1115301,Will the U.S. invade Greenland in 2026?,geopolitics,101.9,1438108,0.028,0.03,0.029,467.18
+2026-09-21 08:08,2,1116062,Will Trump endorse María Corina Machado for Venezuela president in 2026?,geopolitics,101.9,114793,0.06,0.07,0.065,25.41
+2026-09-21 08:08,2,1116581,Will the U.S. invade Colombia in 2026?,geopolitics,101.9,149550,0.021,0.023,0.022,35.45
+2026-09-21 08:08,1,1116981,Will the U.S. invade Mexico in 2026?,geopolitics,101.9,254534,0.008,0.009,0.0085,2.9
+2026-09-21 08:08,1,1124797,NATO dissolves before 2027?,geopolitics,101.9,124023,0.014,0.018,0.016,7.88
+2026-09-21 08:08,2,1124829,EU/NATO country announces peacekeeping force in Ukraine by December 31?,geopolitics,101.9,64796,0.035,0.044,0.0395,24.87
+2026-09-21 08:08,1,1131161,"Lai Ching-te out as President of Taiwan by December 31, 2026?",geopolitics,101.9,105852,0.037,0.038,0.0375,10.25
+2026-09-21 08:08,2,1170144,"Will the US officially declare war on Iran by December 31, 2026?",geopolitics,101.9,854809,0.025,0.032,0.0285,637.93
+2026-09-21 08:08,2,1175411,Will Donald Trump visit North Korea in 2026?,geopolitics,101.9,41456,0.08,0.1,0.09,93.6
+2026-09-21 08:08,1,1179940,US x China Military clash before 2027?,geopolitics,101.9,212336,0.022,0.032,0.027,168.84
+2026-09-21 08:08,1,1184343,Will NATO countries clash with each other before 2027?,geopolitics,101.9,60905,0.043,0.047,0.045,151.15
+2026-09-21 08:08,2,1194695,Will Russia invade another country in 2026?,geopolitics,101.9,520732,0.06,0.07,0.065,762.97
+2026-09-21 08:08,1,1294692,Will Xi Jinping purge Wang Yi in 2026?,geopolitics,101.9,15739,0.014,0.047,0.0305,1.78
+2026-09-21 08:08,1,1294693,Will Xi Jinping purge Cai Qi in 2026?,geopolitics,101.9,51684,0.035,0.046,0.0405,82.23
+2026-09-21 08:08,1,1294694,Will Xi Jinping purge Li Qiang in 2026?,geopolitics,101.9,10175,0.027,0.043,0.035,50.96
+2026-09-21 08:08,1,1294695,Will Xi Jinping purge Wang Huning in 2026?,geopolitics,101.9,12621,0.04,0.045,0.0425,4.7
+2026-09-21 08:08,1,1294696,Will Xi Jinping purge Zhao Leji in 2026?,geopolitics,101.9,12601,0.035,0.047,0.041,41.33
+2026-09-21 08:08,1,1294697,Will Xi Jinping purge Ding Xuexiang in 2026?,geopolitics,101.9,17318,0.031,0.041,0.036,108.59
+2026-09-21 08:08,1,1294698,Will Xi Jinping purge Li Xi in 2026?,geopolitics,101.9,29520,0.008,0.023,0.0155,0.11
+2026-09-21 08:08,1,1294699,Will Xi Jinping purge Zhang Shengmin in 2026?,geopolitics,101.9,30042,0.061,0.069,0.065,173.95
+2026-09-21 08:08,2,1301527,Will Zelenskyy talk to Putin by December 31?,geopolitics,101.9,135125,0.09,0.1,0.095,763.02
+2026-09-21 08:08,1,1301533,U.S. recognizes Machado as leader of Venezuela by December 31?,geopolitics,101.9,179676,0.026,0.029,0.0275,16.63
+2026-09-21 08:08,1,1323083,Will Hezbollah disarm by December 31?,geopolitics,101.9,2075249,0.09,0.1,0.095,660.9
+2026-09-21 08:08,2,1323364,"Ukraine recognizes Russian sovereignty over its territory by December 31, 2026?",geopolitics,101.9,93412,0.021,0.027,0.024,71.28
+2026-09-21 08:08,1,1346523,Will Trump try to acquire part of Alberta?,geopolitics,101.9,3967,0.06,0.07,0.065,14.61
+2026-09-21 08:08,1,1394086,Will Reza Pahlavi enter Iran by December 31?,geopolitics,101.9,2499813,0.033,0.039,0.036,1773.57
+2026-09-21 08:08,1,1397270,"Will Russia capture Lyman by December 31, 2026?",geopolitics,101.9,503357,0.07,0.08,0.075,1621.53
+2026-09-21 08:08,1,1397291,"Will Russia capture all of Lyman by December 31, 2026?",geopolitics,101.9,266038,0.016,0.026,0.021,63.08
+2026-09-21 08:08,1,1472548,Will Reza Pahlavi lead Iran in 2026?,geopolitics,101.9,11766684,0.025,0.035,0.03,743.67
+2026-09-21 08:08,1,1477848,Will the US reopen its embassy in Iran in 2026?,geopolitics,101.9,159500,0.04,0.05,0.045,229.26
+2026-09-21 08:08,2,1508916,Will Israel reopen its embassy in Iran in 2026?,geopolitics,101.9,194518,0.014,0.028,0.021,4.21
+2026-09-21 08:08,1,1633103,Will Iran legalize gay marriage?,geopolitics,101.9,79273,0.016,0.021,0.0185,823.7
+2026-09-21 08:08,2,1642010,Will Israel launch a major ground offensive in Gaza by December 31?,geopolitics,101.9,109023,0.09,0.1,0.095,275.8
+2026-09-21 08:08,1,1651336,Joseph Aoun out as President of Lebanon by December 31?,geopolitics,101.9,32495,0.06,0.087,0.0735,19.35
+2026-09-21 08:08,1,1709755,"Will Mohammed bin Salman cease to be the de facto leader of Saudi Arabia by December 31, 2",geopolitics,101.9,117580,0.049,0.056,0.0525,239.36
+2026-09-21 08:08,1,1731346,"Iran agrees to surrender enriched uranium stockpile by December 31, 2026?",geopolitics,101.9,2248102,0.07,0.08,0.075,6350.86
+2026-09-21 08:08,1,1795597,Will the U.S. test a nuclear weapon by December 31 2026?,geopolitics,101.9,76930,0.044,0.066,0.055,61.14
+2026-09-21 08:08,2,1796381,Will Russia test a nuclear weapon by December 31 2026?,geopolitics,101.9,120130,0.046,0.061,0.0535,15.33
+2026-09-21 08:08,1,1807912,"Will any country leave NATO by December 31, 2026?",geopolitics,101.9,400762,0.022,0.047,0.0345,17.9
+2026-09-21 08:08,1,1896800,"Hamad bin Isa Al Khalifa out as leader of Bahrain by December 31, 2026?",geopolitics,101.9,113456,0.04,0.05,0.045,74.08
+2026-09-21 08:08,1,1918981,Ukraine peace referendum scheduled by December 31?,geopolitics,101.9,37374,0.04,0.06,0.05,44.0
+2026-09-21 08:08,1,1939065,Will Israel annex any territory by December 31?,geopolitics,101.9,93109,0.06,0.08,0.07,164.71
+2026-09-21 08:08,2,2002699,Will Donald Trump visit Pakistan in 2026?,geopolitics,101.9,8329,0.04,0.05,0.045,186.37
+2026-09-21 08:08,2,2002700,Will Donald Trump visit Lebanon in 2026?,geopolitics,101.9,31876,0.007,0.028,0.0175,25.16
+2026-09-21 08:08,1,2006983,US obtains Iranian enriched uranium by December 31?,geopolitics,101.9,2369341,0.05,0.06,0.055,2802.65
+2026-09-21 08:08,1,2125383,"Will Russia capture all of Prymorske by December 31, 2026?",geopolitics,101.9,119538,0.013,0.022,0.0175,1.8
+2026-09-21 08:08,1,2125426,"Will Russia capture Prymorske by December 31, 2026?",geopolitics,101.9,52094,0.05,0.07,0.06,167.3
+2026-09-21 08:08,1,2126490,KRG declares independence from Iraq by December 31?,geopolitics,101.9,272986,0.062,0.083,0.0725,85.07
+2026-09-21 08:08,1,2232191,"Will Russia enter Sumy by December 31, 2026?",geopolitics,101.9,73004,0.047,0.059,0.053,134.72
+2026-09-21 08:08,1,2232195,"Will Russia enter Kharkiv by December 31, 2026?",geopolitics,101.9,121041,0.032,0.036,0.034,137.94
+2026-09-21 08:08,1,2232196,"Will Russia enter Kherson by December 31, 2026?",geopolitics,101.9,8958,0.023,0.034,0.0285,150.95
+2026-09-21 08:08,1,2232197,"Will Russia enter Zaporizhia by December 31, 2026?",geopolitics,101.9,219126,0.024,0.049,0.0365,146.96
+2026-09-21 08:08,2,2246417,"Will Russia capture all of Donetsk Oblast by December 31, 2026?",geopolitics,101.9,220421,0.024,0.028,0.026,166.75
+2026-09-21 08:08,1,2261102,"Ukraine election called by December 31, 2026?",geopolitics,101.9,87660,0.09,0.1,0.095,363.22
+2026-09-21 08:08,2,2262329,Russia coup attempt in 2026?,geopolitics,101.9,132539,0.04,0.06,0.05,515.59
+2026-09-21 08:08,1,2318140,"Will Russia capture Borova by December 31, 2026?",geopolitics,101.9,54346,0.06,0.07,0.065,86.3
+2026-09-21 08:08,3,2364949,Will Trump and Putin meet next in Belarus?,geopolitics,101.9,51165,,0.001,0.001,56.51
+2026-09-21 08:08,3,2364950,Will Trump and Putin meet next in Turkey?,geopolitics,101.9,49956,0.004,0.009,0.0065,49.14
+2026-09-21 08:08,2,2364951,Will Trump and Putin meet next in Finland?,geopolitics,101.9,46085,0.001,0.003,0.002,201.89
+2026-09-21 08:08,2,2364952,Will Trump and Putin meet next in Switzerland?,geopolitics,101.9,51519,0.005,0.008,0.0065,35.29
+2026-09-21 08:08,3,2364953,Will Trump and Putin meet next in Russia?,geopolitics,101.9,103147,0.006,0.008,0.007,58.42
+2026-09-21 08:08,2,2364954,Will Trump and Putin meet next in a Gulf country?,geopolitics,101.9,47009,0.008,0.01,0.009,121.07
+2026-09-21 08:08,3,2364955,Will Trump and Putin meet next in South Korea?,geopolitics,101.9,47366,,0.001,0.001,133.82
+2026-09-21 08:08,3,2364956,Will Trump and Putin meet next in Japan?,geopolitics,101.9,42007,,0.001,0.001,140.85
+2026-09-21 08:08,2,2364957,Will Trump and Putin meet next in Australia?,geopolitics,101.9,47624,,0.001,0.001,83.7
+2026-09-21 08:08,2,2364958,Will Trump and Putin meet next in United States?,geopolitics,101.9,60240,0.03,0.039,0.0345,98.28
+2026-09-21 08:08,2,2364959,Will Trump and Putin meet next in another EU country?,geopolitics,101.9,47925,0.001,0.003,0.002,133.7
+2026-09-21 08:08,2,2364960,Will Trump and Putin meet next in another country?,geopolitics,101.9,47939,0.004,0.011,0.0075,37.33
+2026-09-21 08:08,3,2364963,Will Trump and Putin meet next in Ukraine?,geopolitics,101.9,35306,,0.001,0.001,19.11
+2026-09-21 08:08,1,2365130,Ex-Cuba leader Raul Castro in US custody by December 31?,geopolitics,101.9,29524,0.03,0.05,0.04,201.39
+2026-09-21 08:08,1,2371880,Will Pakistan join the Abraham Accords before 2027?,geopolitics,101.9,9051,0.022,0.04,0.031,2.28
+2026-09-21 08:08,1,2371881,Will Qatar join the Abraham Accords before 2027?,geopolitics,101.9,8800,0.045,0.063,0.054,33.65
+2026-09-21 08:08,1,2371882,Will Turkey join the Abraham Accords before 2027?,geopolitics,101.9,487763,0.029,0.03,0.0295,10.31
+2026-09-21 08:08,1,2371883,Will Egypt join the Abraham Accords before 2027?,geopolitics,101.9,7414,0.047,0.07,0.0585,32.96
+2026-09-21 08:08,1,2371884,Will Jordan join the Abraham Accords before 2027?,geopolitics,101.9,9994,0.05,0.08,0.065,60.75
+2026-09-21 08:08,1,2373388,U.S. agrees to give Ukraine security guarantee by December 31? ,geopolitics,101.9,38727,0.05,0.06,0.055,325.18
+2026-09-21 08:08,1,2373817,Will Russia capture all of Kupiansk by December 31?,geopolitics,101.9,135427,0.02,0.026,0.023,6.04
+2026-09-21 08:08,1,2373935,"Will Russia enter Malokaterynivka by December 31, 2026?",geopolitics,101.9,256424,0.048,0.057,0.0525,47.44
+2026-09-21 08:08,1,2374237,Will Ukraine re-enter Myrnohrad by December 31?,geopolitics,101.9,113014,0.07,0.08,0.075,102.34
+2026-09-21 08:08,2,2374271,"Will Ukraine recapture Crimean territory by December 31, 2026?",geopolitics,101.9,2806372,0.05,0.06,0.055,2933.4
+2026-09-21 08:08,3,2382819,Will China blockade Taiwan in 2026?,geopolitics,101.9,368590,0.036,0.042,0.039,131.92
+2026-09-21 08:08,2,2412359,Will North Korea recognize Israel by December 31?,geopolitics,101.9,20818,0.037,0.038,0.0375,167.26
+2026-09-21 08:08,2,2412360,Will Cuba recognize Israel by December 31?,geopolitics,101.9,14037,0.04,0.041,0.0405,317.8
+2026-09-21 08:08,2,2412361,Will Saudi Arabia recognize Israel by December 31?,geopolitics,101.9,76649,0.072,0.074,0.073,159.74
+2026-09-21 08:08,2,2412362,Will Lebanon recognize Israel by December 31?,geopolitics,101.9,115933,0.09,0.1,0.095,57.14
+2026-09-21 08:08,2,2412363,Will Afghanistan recognize Israel by December 31?,geopolitics,101.9,21335,0.032,0.033,0.0325,155.86
+2026-09-21 08:08,2,2412364,Will Iraq recognize Israel by December 31?,geopolitics,101.9,15023,0.033,0.038,0.0355,140.87
+2026-09-21 08:08,2,2412365,Will Pakistan recognize Israel by December 31?,geopolitics,101.9,10051,0.04,0.05,0.045,330.57
+2026-09-21 08:08,2,2412366,Will Syria recognize Israel by December 31?,geopolitics,101.9,22317,0.04,0.05,0.045,198.99
+2026-09-21 08:08,2,2412367,Will Venezuela recognize Israel by December 31?,geopolitics,101.9,362804,0.08,0.1,0.09,58.18
+2026-09-21 08:08,1,2412368,Will Tunisia recognize Israel by December 31?,geopolitics,101.9,13249,0.05,0.06,0.055,269.44
+2026-09-21 08:08,2,2412369,Will Kuwait recognize Israel by December 31?,geopolitics,101.9,19782,0.027,0.036,0.0315,112.06
+2026-09-21 08:08,2,2412370,Will Qatar recognize Israel by December 31?,geopolitics,101.9,39120,0.024,0.028,0.026,140.6
+2026-09-21 08:08,1,2412371,Will Indonesia recognize Israel by December 31?,geopolitics,101.9,23577,0.034,0.035,0.0345,168.62
+2026-09-21 08:08,1,2412372,Will Malaysia recognize Israel by December 31?,geopolitics,101.9,14319,0.025,0.029,0.027,341.85
+2026-09-21 08:08,1,2412373,Will Bangladesh recognize Israel by December 31?,geopolitics,101.9,17067,0.012,0.018,0.015,73.5
+2026-09-21 08:08,2,2412374,Will Iran recognize Israel by December 31?,geopolitics,101.9,17436,0.037,0.04,0.0385,98.51
+2026-09-21 08:08,2,2429575,Trump meets with Mojtaba Khamenei by December 31?,geopolitics,101.9,64595,0.018,0.024,0.021,791.24
+2026-09-21 08:08,1,2439087,European country agrees to give Ukraine security guarantee by December 31?,geopolitics,101.9,89893,0.07,0.08,0.075,291.9
+2026-09-21 08:08,2,2641019,"Israel withdraws from Lebanon by December 31, 2026?",geopolitics,101.9,234494,0.04,0.05,0.045,1386.39
+2026-09-21 08:08,1,2668007,Will a US-Iran deal in 2026 include Surrender of Iranian Enriched Uranium?,geopolitics,101.9,67603,0.04,0.05,0.045,1293.05
+2026-09-21 08:08,1,2676288,Will Russia capture Sloviansk by December 31?,geopolitics,101.9,127763,0.021,0.049,0.035,61.13
+2026-09-21 08:08,2,2676310,Ukraine coup attempt by December 31?,geopolitics,101.9,152031,0.051,0.078,0.0645,106.83
+2026-09-21 08:08,1,2677096,"Will Russia capture Havrylivka by December 31, 2026?",geopolitics,101.9,26923,0.053,0.056,0.0545,103.21
+2026-09-21 08:08,1,2677097,Will Russia capture all of Drobysheve by December 31?,geopolitics,101.9,96288,0.058,0.063,0.0605,135.86
+2026-09-21 08:08,2,2747387,Iran coup attempt by December 31?,geopolitics,101.9,94478,0.07,0.08,0.075,70.98
+2026-09-21 08:08,1,2747445,Will Netanyahu be pardoned by December 31?,geopolitics,101.9,13666,0.05,0.06,0.055,31.07
+2026-09-21 08:08,1,2747460,"Naim Qassem out as Hezbollah’s secretary-general by December 31, 2026?",geopolitics,101.9,14731,0.081,0.097,0.089,146.8
+2026-09-21 08:08,2,2749366,Will Trump talk to Mojtaba Khamenei by December 31?,geopolitics,101.9,123261,0.029,0.042,0.0355,107.63
+2026-09-21 08:08,2,2749382,"NATO/EU troops fighting in Ukraine by December 31, 2026?",geopolitics,101.9,153685,0.041,0.081,0.061,83.25
+2026-09-21 08:08,2,2749421,"U.S. x Russia Nuclear deal by December 31, 2026?",geopolitics,101.9,13952,0.03,0.077,0.0535,29.21
+2026-09-21 08:08,1,2749439,Cuba leader Miguel Diaz-Canel in US custody by December 31?,geopolitics,101.9,12038,0.017,0.073,0.045,75.38
+2026-09-21 08:08,1,2749485,Greece x Turkey military engagement by December 31?,geopolitics,101.9,60008,0.071,0.09,0.0805,6.97
+2026-09-21 08:08,2,2749488,Will Trump visit North Korea by December 31?,geopolitics,101.9,126274,0.093,0.1,0.0965,131.93
+2026-09-21 08:08,1,2750300,Will Kim Jong Un be the next leader out before 2027?,geopolitics,101.9,11402,0.004,0.006,0.005,18.22
+2026-09-21 08:08,1,2750301,Will Xi Jinping be the next leader out before 2027?,geopolitics,101.9,17978,0.011,0.017,0.014,45.85
+2026-09-21 08:08,1,2750306,Will Donald Trump be the next leader out before 2027?,geopolitics,101.9,9772,0.004,0.005,0.0045,35.07
+2026-09-21 08:08,1,2750307,Will Volodymyr Zelenskyy be the next leader out before 2027?,geopolitics,101.9,13288,0.008,0.017,0.0125,25.23
+2026-09-21 08:08,1,2750308,Will Vladimir Putin be the next leader out before 2027?,geopolitics,101.9,11368,0.009,0.011,0.01,38.59
+2026-09-21 08:08,1,2907324,"US charges Hormuz fees by December 31, 2026?",geopolitics,101.9,115237,0.053,0.062,0.0575,950.22
+2026-09-21 08:08,1,2922429,"Will Turkey rejoin the F-35 program by December 31, 2026?",geopolitics,101.9,32628,0.07,0.09,0.08,49.26
+2026-09-21 08:08,2,3047537,US-Saudi nuclear deal enters into force in 2026?,geopolitics,101.9,39239,0.07,0.09,0.08,39.01
+2026-09-21 08:08,1,3092026,"Will Ukraine re-enter Rodynske by December 31, 2026?",geopolitics,101.9,22870,0.06,0.08,0.07,61.52
+2026-09-21 08:08,1,1007579,"Will Russia capture Sumy by March 31, 2027?",geopolitics,191.8,445520,0.06,0.07,0.065,994.37
+2026-09-21 08:08,1,1124834,"US x Russia military clash by December 31, 2026?",geopolitics,249.8,1082831,0.034,0.05,0.042,32.32
+2026-09-21 08:08,3,1811266,"Will China invade Taiwan by June 30, 2027?",geopolitics,282.8,450597,0.07,0.08,0.075,3660.95
+2026-09-21 08:08,1,1129896,Will the Communist Party of the Russian Federation (KPRF) win the most seats in the next R,world,8.7,294019,,0.001,0.001,50.98
+2026-09-21 08:08,1,1129899,Will A Just Russia – For Truth (SRZP) win the most seats in the next Russian parliamentary,world,8.7,748262,,0.001,0.001,68.21
+2026-09-21 08:08,1,1129900,Will the Liberal Democratic Party of Russia (LDPR) win the most seats in the next Russian ,world,8.7,264215,,0.001,0.001,71.17
+2026-09-21 08:08,1,1129902,Will New People (NL) win the most seats in the next Russian parliamentary election?,world,8.7,267803,,0.001,0.001,127.44
+2026-09-21 08:08,1,1129903,Will Rodina win the most seats in the next Russian parliamentary election?,world,8.7,505710,,0.001,0.001,71.08
+2026-09-21 08:08,1,1129905,Will Civic Platform (GP) win the most seats in the next Russian parliamentary election?,world,8.7,604433,,0.001,0.001,94.48
+2026-09-21 08:08,1,1129909,Will Yabloko win the most seats in the next Russian parliamentary election?,world,8.7,71405,,0.001,0.001,112.92
+2026-09-21 08:08,1,1130017,Will Rodina gain the most seats in the next Russian parliamentary election?,world,8.7,3204302,,0.001,0.001,777.53
+2026-09-21 08:08,1,1130018,Will Civic Platform (GP) gain the most seats in the next Russian parliamentary election?,world,8.7,1410336,,0.001,0.001,1097.36
+2026-09-21 08:08,1,1130020,Will Yabloko gain the most seats in the next Russian parliamentary election?,world,8.7,3439460,,0.001,0.001,957.37
+2026-09-21 08:08,1,3251600,Bank of Japan decreases interest rates by 50+ bps after the October 2026 meeting?,world,38.7,7041,,0.001,0.001,12.01
+2026-09-21 08:08,1,3251601,Bank of Japan decreases interest rates by 25 bps after the October 2026 meeting?,world,38.7,12159,,0.001,0.001,35.46
+2026-09-21 08:08,1,3251604,Bank of Japan increases interest rates by 50+ bps after the October 2026 meeting?,world,38.7,20420,0.009,0.01,0.0095,15.04
+2026-09-21 08:08,1,1067187,Xi Jinping divorce before 2027?,world,101.9,111132,0.008,0.009,0.0085,37.24
+2026-09-21 08:08,1,3242379,Will Trump meet with King Mohammed VI in 2026?,world,101.9,3688,0.06,0.07,0.065,13.18
+2026-09-21 08:08,2,3914548,"Will Putin meet with Zelenskyy by December 31, 2026?",world,101.9,18691,0.05,0.07,0.06,435.58
+2026-09-21 08:08,1,3939749,Will Trump rename an ocean in 2026?,world,101.9,17568,0.04,0.06,0.05,1032.02
+2026-09-21 08:08,1,4155346,Venezuelan oil added to Strategic Petroleum Reserve by December 31?,world,101.9,1563,0.06,0.09,0.075,29.63
+2026-09-21 08:08,1,1132791,Will China's annual inflation in 2026 be less than -1.0%?,world,110.7,20384,0.003,0.014,0.0085,11.5
+2026-09-21 08:08,1,1132792,Will China's annual inflation in 2026 be between -0.9% and -0.5%?,world,110.7,4611,0.03,0.062,0.046,6.88
+2026-09-21 08:08,1,1132793,Will China's annual inflation in 2026 be between -0.4% and 0.0%?,world,110.7,5117,0.014,0.053,0.0335,12.97
+2026-09-21 08:08,1,1132797,Will China's annual inflation in 2026 be between 1.6% and 2.0%?,world,110.7,7723,0.011,0.063,0.037,12.15
+2026-09-21 08:08,1,1132798,Will China's annual inflation in 2026 be at least 2.5%?,world,110.7,3703,0.002,0.003,0.0025,3.69
+2026-09-21 08:08,1,1237148,Will China's annual inflation in 2026 be between 2.0% and 2.4%?,world,110.7,8526,0.005,0.024,0.0145,9.67
+2026-09-21 08:08,1,679019,Will Jordan Bardella win the 2027 French presidential election?,world,220.7,2211677,0.015,0.016,0.0155,440.1
+2026-09-21 08:08,1,4489604,"Will Khamenei post 5-9 posts from September 15 to September 22, 2026?",politics,1.3,3123,0.001,0.004,0.0025,3.55
+2026-09-21 08:08,1,4489609,"Will Khamenei post 10-14 posts from September 15 to September 22, 2026?",politics,1.3,1951,0.001,0.004,0.0025,8.61
+2026-09-21 08:08,1,4489616,"Will Khamenei post 15-19 posts from September 15 to September 22, 2026?",politics,1.3,1786,0.001,0.004,0.0025,6.52
+2026-09-21 08:08,1,4489623,"Will Khamenei post 20-24 posts from September 15 to September 22, 2026?",politics,1.3,2087,,0.006,0.006,4.58
+2026-09-21 08:08,1,4489631,"Will Khamenei post 25-29 posts from September 15 to September 22, 2026?",politics,1.3,2144,,0.006,0.006,5.73
+2026-09-21 08:08,1,4489640,"Will Khamenei post 30-34 posts from September 15 to September 22, 2026?",politics,1.3,2144,,0.006,0.006,4.49
+2026-09-21 08:08,1,4489661,"Will Donald Trump post 140-159 Truth Social posts from September 15 to September 22, 2026?",politics,1.3,1395,0.02,0.08,0.05,8.92
+2026-09-21 08:08,1,4489670,"Will Donald Trump post 160-179 Truth Social posts from September 15 to September 22, 2026?",politics,1.3,1563,0.02,0.084,0.052,11.46
+2026-09-21 08:08,1,4489679,"Will Donald Trump post 180-199 Truth Social posts from September 15 to September 22, 2026?",politics,1.3,1332,0.002,0.019,0.0105,3.21
+2026-09-21 08:08,1,4489688,"Will Donald Trump post 200+ Truth Social posts from September 15 to September 22, 2026?",politics,1.3,3027,0.002,0.025,0.0135,0.51
+2026-09-21 08:08,1,4658722,"Will Trump say ""Bitcoin"" or ""Crypto"" or ""Cryptocurrency"" during his remarks at the United ",politics,1.7,5652,0.04,0.056,0.048,173.97
+2026-09-21 08:08,1,4574393,"Will Donald Trump post 200+ Truth Social posts from September 18 to September 25, 2026?",politics,4.3,4059,0.02,0.025,0.0225,0.18
+2026-09-21 08:08,2,4174617,"Will Donald Trump publicly insult Pope Leo XIV by September 30, 2026?",politics,9.7,1386,0.031,0.079,0.055,15.32
+2026-09-21 08:08,2,4174618,"Will Donald Trump publicly insult Vladimir Putin by September 30, 2026?",politics,9.7,2778,0.01,0.044,0.027,57.07
+2026-09-21 08:08,2,4174623,"Will Donald Trump publicly insult Benjamin Netanyahu by September 30, 2026?",politics,9.7,1642,0.09,0.1,0.095,105.71
+2026-09-21 08:08,1,4174624,"Will Donald Trump publicly insult J.D. Vance by September 30, 2026?",politics,9.7,1542,0.01,0.038,0.024,3.37
+2026-09-21 08:08,2,4174626,"Will Donald Trump publicly insult Xi Jinping by September 30, 2026?",politics,9.7,2189,0.014,0.044,0.029,5.07
+2026-09-21 08:08,2,4174638,"Will Donald Trump publicly insult Kevin Warsh by September 30, 2026?",politics,9.7,77433,0.05,0.06,0.055,22.06
+2026-09-21 08:08,1,2734704,Will the US House pass a bill restricting military aid to Israel by September 30?,politics,9.8,2401,0.008,0.036,0.022,11.48
+2026-09-21 08:08,2,2747302,Netanyahu drops out of Israel election by September 30?,politics,9.8,85913,0.003,0.009,0.006,46.89
+2026-09-21 08:08,1,3187536,Will María Corina Machado enter Venezuela by September 30?,politics,9.8,48188,0.06,0.09,0.075,31.35
+2026-09-21 08:08,1,3207044,Xi meets with Lee Jae-Myung by September 30?,politics,9.8,1010,0.007,0.024,0.0155,0.23
+2026-09-21 08:08,1,3409505,Trump tries to fire Lisa Cook by September 30?,politics,9.8,13149,0.06,0.07,0.065,24.9
+2026-09-21 08:08,1,4174612,Trump out as President by September 30?,politics,9.8,1336006,0.004,0.005,0.0045,2008.43
+2026-09-21 08:08,1,4339018,"Trump renames New Mexico to New America by September 30, 2026?",politics,9.8,85548,0.015,0.016,0.0155,254.07
+2026-09-21 08:08,1,4346070,Will Donald Trump post about $LAPTOP by September 30?,politics,9.8,14452,0.01,0.013,0.0115,61.27
+2026-09-21 08:08,1,4346073,Will Donald Trump Jr. post about $LAPTOP by September 30?,politics,9.8,6662,0.011,0.017,0.014,60.35
+2026-09-21 08:08,1,4346075,Will Eric Trump post about $LAPTOP by September 30?,politics,9.8,14183,0.058,0.062,0.06,112.66
+2026-09-21 08:08,1,4570491,Will Trump pardon anyone by September 30?,politics,9.8,1345,0.04,0.1,0.07,3.97
+2026-09-21 08:08,1,4769494,Trump renames AI by September 30?,politics,9.8,3926,0.04,0.05,0.045,122.78
+2026-09-21 08:08,1,1822539,Will John Coupar win the 2026 Vancouver mayoral election?,politics,25.7,5939,0.003,0.017,0.01,7.05
+2026-09-21 08:08,1,3358722,Will Trump endorse Romeu Zema for President of Brazil?,politics,34.8,1325,0.013,0.071,0.042,9.11
+2026-09-21 08:08,1,2100982,Will Together win the most seats in the 2026 Israeli legislative election?,politics,35.7,48185,0.002,0.009,0.0055,2.16
+2026-09-21 08:08,1,2100983,Will Shas win the most seats in the 2026 Israeli legislative election?,politics,35.7,9762,,0.001,0.001,21.52
+2026-09-21 08:08,1,2100985,Will The Democrats win the most seats in the 2026 Israeli legislative election?,politics,35.7,10731,,0.001,0.001,19.17
+2026-09-21 08:08,1,2100986,Will Otzma Yehudit win the most seats in the 2026 Israeli legislative election?,politics,35.7,13507,,0.001,0.001,16.41
+2026-09-21 08:08,1,2110580,Will Likud win 35 or more seats in the 2026 Israeli legislative election?,politics,35.7,15654,0.012,0.037,0.0245,290.01
+2026-09-21 08:08,1,4196798,Will Kevin Hyland win the next Waratah–Wynyard mayoral election?,politics,36.8,1064,0.003,0.01,0.0065,3.24
+2026-09-21 08:08,1,4758535,Will United Russia (ER) win 45-50% of the party-list vote in the 2026 Russian State Duma e,politics,40.7,5594,,0.004,0.004,8.64
+2026-09-21 08:08,1,4758536,Will United Russia (ER) win 50-55% of the party-list vote in the 2026 Russian State Duma e,politics,40.7,9808,,0.001,0.001,26.18
+2026-09-21 08:08,1,4758538,Will United Russia (ER) win 60% or more of the party-list vote in the 2026 Russian State D,politics,40.7,17098,0.003,0.007,0.005,7.9
+2026-09-21 08:08,1,1124642,Will Hezbollah win the most seats in the 2026 Lebanese parliamentary election?,politics,40.8,56390,0.002,0.003,0.0025,39.26
+2026-09-21 08:08,1,1124647,Will Armenian Revolutionary Federation win the most seats in the 2026 Lebanese parliamenta,politics,40.8,10552,,0.001,0.001,6.83
+2026-09-21 08:08,1,1124654,Will Arab Socialist Ba'ath Party in Lebanon win the most seats in the 2026 Lebanese parlia,politics,40.8,10710,,0.001,0.001,4.21
+2026-09-21 08:08,1,3005857,Will Benjamin Netanyahu be arrested by September 30?,politics,40.8,20617,0.001,0.002,0.0015,4.4
+2026-09-21 08:08,1,3005858,Will Benjamin Netanyahu be arrested by December 31?,politics,40.8,6753,0.06,0.07,0.065,54.54
+2026-09-21 08:08,1,3887683,Will Kanye West meet with Vladimir Putin by October 31?,politics,40.8,11480,0.011,0.029,0.02,4.55
+2026-09-21 08:08,1,3888521,"Courts block Trump's $100,000 Truth Social early access plan by October 31?",politics,40.8,1615,0.08,0.1,0.09,38.68
+2026-09-21 08:08,2,4641068,"Will Donald Trump publicly insult Kevin Warsh by October 31, 2026?",politics,40.8,1105,0.08,0.1,0.09,10.71
+2026-09-21 08:08,1,628943,Will Butch Ware win the California Governor Election in 2026?,politics,42.7,1313396,,0.001,0.001,370.56
+2026-09-21 08:08,1,2125864,Will Georgia use a new congressional map for the 2026 United States midterm elections?,politics,42.7,8962,0.033,0.039,0.036,47.83
+2026-09-21 08:08,1,2125867,Will Indiana use a new congressional map for the 2026 United States midterm elections?,politics,42.7,34593,0.04,0.05,0.045,250.08
+2026-09-21 08:08,1,3765683,Will the Georgia 2026 Senate race be within 1%?,politics,43.7,1160,0.003,0.023,0.013,0.22
+2026-09-21 08:08,1,593983,Will Trump endorse John Cornyn for TX-Sen by Nov 2 2026 ET?,politics,43.7,148214,0.013,0.022,0.0175,32.73
+2026-09-21 08:08,1,3915292,Will USD be less than 1.7M Iranian rials on September 30?,middle-east,9.7,4031,0.002,0.012,0.007,10.68
+2026-09-21 08:08,1,3915293,Will USD be between 1.7M and 1.8M Iranian rials on September 30?,middle-east,9.7,3636,0.002,0.01,0.006,3.1
+2026-09-21 08:08,1,3915294,Will USD be between 1.8M and 1.9M Iranian rials on September 30?,middle-east,9.7,4280,0.012,0.039,0.0255,7.51
+2026-09-21 08:08,1,3915295,Will USD be between 1.9M and 2.0M Iranian rials on September 30?,middle-east,9.7,5161,0.002,0.01,0.006,6.96
+2026-09-21 08:08,1,3915296,Will USD be between 2.0M and 2.1M Iranian rials on September 30?,middle-east,9.7,6962,0.009,0.048,0.0285,9.71
+2026-09-21 08:08,1,3915297,Will USD be between 2.1M and 2.2M Iranian rials on September 30?,middle-east,9.7,12737,0.017,0.073,0.045,0.73
+2026-09-21 08:08,1,4224308,Will USD be less than 2.2M Iranian rials on September 30?,middle-east,9.7,5617,0.08,0.1,0.09,145.84
+2026-09-21 08:08,1,4224311,Will USD be between 2.8M and 3.1M Iranian rials on September 30?,middle-east,9.7,3279,0.025,0.044,0.0345,10.93
+2026-09-21 08:08,1,4224312,Will USD be at least 3.1M Iranian rials on September 30?,middle-east,9.7,1684,0.002,0.01,0.006,7.01
+2026-09-21 08:08,1,4199440,Will USD be between 3.5M and 4.0M Iranian rials on December 31?,middle-east,101.7,1697,0.026,0.046,0.036,10.09
+2026-09-21 08:08,1,2569893,Congress approves Iran deal in 2026?,middle-east,101.9,13160,0.06,0.09,0.075,0.6
+2026-09-21 08:08,1,3890233,"Will Iran join the Mecca Agreement by December 31, 2026?",middle-east,101.9,2480,0.03,0.062,0.046,19.78
+2026-09-21 08:08,1,3890236,"Will Egypt join the Mecca Agreement by December 31, 2026?",middle-east,101.9,9485,0.07,0.09,0.08,35.97
+2026-09-21 08:08,1,3890237,"Will Iraq join the Mecca Agreement by December 31, 2026?",middle-east,101.9,1551,0.07,0.09,0.08,46.28
+2026-09-21 08:08,1,3890238,"Will Jordan join the Mecca Agreement by December 31, 2026?",middle-east,101.9,1511,0.048,0.074,0.061,32.55
+2026-09-21 08:08,1,3890240,"Will Lebanon join the Mecca Agreement by December 31, 2026?",middle-east,101.9,2726,0.021,0.076,0.0485,9.44
+2026-09-21 08:08,1,3890245,"Will Sudan join the Mecca Agreement by December 31, 2026?",middle-east,101.9,2952,0.002,0.018,0.01,3.26
+2026-09-21 08:08,1,3890246,"Will Syria join the Mecca Agreement by December 31, 2026?",middle-east,101.9,2720,0.047,0.066,0.0565,31.32
+2026-09-21 08:08,2,4641016,NATO troops fighting in Yemen before 2027?,middle-east,101.9,5881,0.049,0.05,0.0495,154.0
+2026-09-21 08:08,1,3212543,"Will JD Vance visit Ukraine by December 31, 2026?",ukraine,101.9,146823,0.069,0.085,0.077,31.36
+2026-09-21 08:08,2,3212544,"Will Donald Trump visit Ukraine by December 31, 2026?",ukraine,101.9,108979,0.037,0.049,0.043,7.8
+2026-09-21 08:08,2,3128769,Iran full airspace closure by September 30?,iran,9.8,882478,0.05,0.06,0.055,1784.98
+2026-09-21 08:08,2,3215073,Kharg Island no longer under Iranian control by December 31?,iran,101.9,376554,0.05,0.06,0.055,2576.81
+2026-09-21 08:08,2,3553880,"Will Donald Trump attend a US x Iran diplomatic meeting by December 31, 2026?",iran,101.9,27795,0.062,0.069,0.0655,55.11
+2026-09-21 08:08,1,3553881,"Will Marco Rubio attend a US x Iran diplomatic meeting by December 31, 2026?",iran,101.9,27206,0.09,0.1,0.095,487.65
+2026-09-21 08:08,1,3553885,"Will Pete Hegseth attend a US x Iran diplomatic meeting by December 31, 2026?",iran,101.9,22446,0.06,0.07,0.065,748.51
+2026-09-21 08:08,2,3553888,"Will Mojtaba Khamenei attend a US x Iran diplomatic meeting by December 31, 2026?",iran,101.9,24435,0.017,0.029,0.023,4.39
+2026-09-21 08:08,1,3553892,"Will Ahmad Vahidi attend a US x Iran diplomatic meeting by December 31, 2026?",iran,101.9,18964,0.048,0.055,0.0515,288.31
+2026-09-21 08:08,1,3553893,"Will Esmail Qaani attend a US x Iran diplomatic meeting by December 31, 2026?",iran,101.9,12429,0.057,0.058,0.0575,629.95
+2026-09-21 08:08,2,3708624,"Trump renames Strait of Hormuz to ""Strait of Trump"" by December 31?",iran,101.9,99473,0.041,0.048,0.0445,2.11
+2026-09-21 08:08,2,3915302,"Will the Netherlands send warships through the Strait of Hormuz by December 31, 2026?",iran,101.9,16457,0.04,0.05,0.045,10.53
+2026-09-21 08:08,1,4082028,Will the Bank of Israel increase the Bank of Israel Interest Rate after the October decisi,israel,29.7,4468,0.002,0.01,0.006,7.95
+2026-09-21 08:08,2,2491901,Will Trump endorse Together in the 2026 Israeli Election?,israel,36.8,2348,0.001,0.005,0.003,5.73
+2026-09-21 08:08,2,2491903,Will Trump endorse Blue and White in the 2026 Israeli Election?,israel,36.8,1406,,0.001,0.001,4.75
+2026-09-21 08:08,2,2491905,Will Trump endorse UTJ in the 2026 Israeli Election?,israel,36.8,1104,,0.001,0.001,5.53
+2026-09-21 08:08,2,2491906,Will Trump endorse Otzma Yehudit in the 2026 Israeli Election?,israel,36.8,1182,,0.001,0.001,5.5
+2026-09-21 08:08,2,2491908,Will Trump endorse Yashar in the 2026 Israeli Election?,israel,36.8,2708,0.001,0.003,0.002,5.16
+2026-09-21 08:08,2,3249688,Will Trump visit Gaza in 2026?,israel,101.9,3218,0.011,0.053,0.032,72.61
+2026-09-21 08:08,1,2750218,Will the People’s Bank of China increase rates by September 30?,china,9.7,6175,0.001,0.002,0.0015,11.85
+2026-09-21 08:08,1,2750220,Will the People’s Bank of China decrease rates by September 30?,china,9.7,23684,0.005,0.008,0.0065,15.98
+2026-09-21 08:08,1,3008047,Will Xiaomi have the best Chinese AI model at the end of September 2026?,china,9.8,39432,,0.001,0.001,13.83
+2026-09-21 08:08,1,3093525,Will Xiaomi be the second-best Chinese AI company at the end of September 2026?,china,9.8,9372,0.009,0.015,0.012,13.16
+2026-09-21 08:08,1,3093557,Will Xiaomi be the third-best Chinese AI company at the end of September 2026?,china,9.8,3004,0.013,0.03,0.0215,3.25
+2026-09-21 08:08,1,2953630,Will China GDP growth in Q3 2026 be less than 3.4%?,china,28.7,1402,,0.002,0.002,4.55
+2026-09-21 08:08,1,2953632,Will China GDP growth in Q3 2026 be between 3.7% and 4.0%?,china,28.7,1874,0.002,0.009,0.0055,3.25
+2026-09-21 08:08,1,2953636,Will China GDP growth in Q3 2026 be between 4.9% and 5.2%?,china,28.7,4080,0.001,0.005,0.003,1.36
+2026-09-21 08:08,1,2953637,Will China GDP growth in Q3 2026 be between 5.2% and 5.5%?,china,28.7,1705,,0.001,0.001,3.74
+2026-09-21 08:08,1,2953638,Will China GDP growth in Q3 2026 be at least 5.5%?,china,28.7,1432,,0.001,0.001,5.33
+2026-09-21 08:08,1,3554475,Will Xiaomi have the best Chinese AI model at the end of October 2026?,china,40.8,5574,0.003,0.005,0.004,0.49
+2026-09-21 08:08,1,1192816,Will China’s 2026 annual GDP growth (Y/Y) be below 1.0%?,china,131.7,68060,0.001,0.002,0.0015,12.41
+2026-09-21 08:08,1,1192817,Will China’s 2026 annual GDP growth (Y/Y) be between 1.0% and 2.0%?,china,131.7,75529,0.001,0.002,0.0015,5.42
+2026-09-21 08:08,1,1192818,Will China’s 2026 annual GDP growth (Y/Y) be between 2.0% and 3.0%?,china,131.7,46025,0.002,0.007,0.0045,9.44
+2026-09-21 08:08,1,1192819,Will China’s 2026 annual GDP growth (Y/Y) be between 3.0% and 4.0%?,china,131.7,81482,0.01,0.013,0.0115,75.77
+2026-09-21 08:08,1,1192821,Will China’s 2026 annual GDP growth (Y/Y) be between 5.0% and 6.0%?,china,131.7,80900,0.058,0.059,0.0585,202.27
+2026-09-21 08:08,1,1192822,Will China’s 2026 annual GDP growth (Y/Y) be between 6.0% and 7.0%?,china,131.7,87943,0.001,0.002,0.0015,149.94
+2026-09-21 08:08,1,1192823,Will China’s 2026 annual GDP growth (Y/Y) be between 7.0% and 8.0%?,china,131.7,65353,,0.001,0.001,29.99
+2026-09-21 08:08,1,1192824,Will China’s 2026 annual GDP growth (Y/Y) be between 8.0% and 9.0%?,china,131.7,54761,,0.01,0.01,11.18
+2026-09-21 08:08,1,1192826,Will China’s 2026 annual GDP growth (Y/Y) be 9% or higher?,china,131.7,117557,,0.019,0.019,14.28
+2026-09-21 08:08,1,3081960,Will the Bank of Russia increase the key rate after the October Meeting?,russia,32.7,12518,0.03,0.033,0.0315,83.19
+2026-09-21 08:08,1,3719723,Kanye West arrested in Russia by October 31?,russia,40.8,3846,0.012,0.025,0.0185,2.63
+2026-09-21 08:08,1,3719741,Kanye West performs in Russia by October 31?,russia,40.8,601415,0.072,0.094,0.083,1.16
+2026-09-21 08:08,1,3157901,Will A Just Russia win the next Chukotka Autonomous Okrug Parliament elections?,russia,313.8,1049,,0.001,0.001,2.46
+2026-09-21 08:08,1,3161976,Will Communists of Russia win the next Leningrad Oblast Parliament elections?,russia,313.8,1230,,0.001,0.001,5.66
+2026-09-21 08:08,1,2758498,Will the Central Bank of Colombia decrease the monetary policy interest rate by 50+ bps at,economy,8.7,3437,,0.001,0.001,5.05
+2026-09-21 08:08,1,2758499,Will the Central Bank of Colombia decrease the monetary policy interest rate by 25 bps at ,economy,8.7,3170,0.003,0.007,0.005,7.97
+2026-09-21 08:08,1,3212182,Will Saudi Aramco be the largest company in the world by market cap on September 30?,economy,9.7,143547,,0.001,0.001,155.53
+2026-09-21 08:08,1,3212277,Will Saudi Aramco be the second-largest company in the world by market cap on September 30,economy,9.7,7362,,0.001,0.001,9.57
+2026-09-21 08:08,1,3212491,Will Saudi Aramco be the third-largest company in the world by market cap on September 30?,economy,9.7,1266,,0.001,0.001,21.87
+2026-09-21 08:08,1,3083654,Will South Korea GDP growth in Q3 2026 be less than 2.0%?,economy,35.7,1115,0.003,0.01,0.0065,0.31
+2026-09-21 08:08,1,3083658,Will South Korea GDP growth in Q3 2026 be between 3.5% and 3.9%?,economy,35.7,2015,0.009,0.083,0.046,4.73
+2026-09-21 08:08,1,3083659,Will South Korea GDP growth in Q3 2026 be between 4.0% and 4.4%?,economy,35.7,1243,0.001,0.005,0.003,0.42
+2026-09-21 08:08,1,4470026,Will the Central Bank of Colombia decrease the monetary policy interest rate by 25 bps at ,economy,38.7,1191,0.06,0.08,0.07,62.3
+2026-09-21 08:08,1,3681001,Will Japan Q3 GDP growth (annualized) be between -2.4% and -1.6%?,economy,55.7,3758,0.002,0.009,0.0055,0.24
+2026-09-21 08:08,1,3681007,Will Japan Q3 GDP growth (annualized) be between 2.4% and 3.2%?,economy,55.7,3422,0.024,0.068,0.046,3.38
+2026-09-21 08:08,1,3681008,Will Japan Q3 GDP growth (annualized) be between 3.2% and 4.0%?,economy,55.7,1244,0.013,0.048,0.0305,6.97
+2026-09-21 08:08,1,676744,Will Saudi Aramco be the largest company in the world by market cap on December 31?,economy,100.7,949790,0.001,0.002,0.0015,420.64
+2026-09-21 08:08,1,1348496,Will South Korea’s 2026 Annual Inflation be less than 1.5%?,economy,100.7,3105,0.035,0.074,0.0545,32.08
+2026-09-21 08:08,1,1348497,Will South Korea’s 2026 Annual Inflation be between 1.5% and 1.7%?,economy,100.7,3107,0.039,0.071,0.055,16.08
+2026-09-21 08:08,1,1348498,Will South Korea’s 2026 Annual Inflation be between 1.8% and 2.0%?,economy,100.7,1867,0.068,0.083,0.0755,47.71
+2026-09-21 08:08,1,1348499,Will South Korea’s 2026 Annual Inflation be between 2.1% and 2.3%?,economy,100.7,4783,0.086,0.093,0.0895,124.62
+2026-09-21 08:08,1,1348500,Will South Korea’s 2026 Annual Inflation be between 2.4% and 2.6%?,economy,100.7,6646,0.082,0.094,0.088,73.57
+2026-09-21 08:08,1,2734554,Will Jio Platforms be the largest Indian company?;,economy,101.7,1581,0.018,0.04,0.029,1.98
+2026-09-21 08:08,1,3392762,Will Saudi Aramco be the third-largest company in the world by market cap on December 31?,economy,101.7,1274,,0.002,0.002,4.3
+2026-09-21 08:08,1,3081879,"Will Warsh be out as Fed Chair by December 31, 2026?",economy,101.9,28089,0.017,0.025,0.021,312.45
+2026-09-21 08:08,2,3081957,Trump tries to fire Warsh in 2026?,economy,101.9,30017,0.01,0.014,0.012,4.39
+2026-09-21 08:08,1,1353085,Will India’s 2026 Annual Inflation be less than 0.75%?,economy,112.7,2328,0.007,0.023,0.015,2.7
+2026-09-21 08:08,1,1353086,Will India’s 2026 Annual Inflation be between 0.75% and 1.49%?,economy,112.7,1545,0.003,0.004,0.0035,0.07
+2026-09-21 08:08,1,1353087,Will India’s 2026 Annual Inflation be between 1.50% and 2.24%?,economy,112.7,1605,0.003,0.008,0.0055,2.31
+2026-09-21 08:08,1,1353088,Will India’s 2026 Annual Inflation be between 2.25% and 2.99%?,economy,112.7,25481,0.002,0.003,0.0025,0.57
+2026-09-21 08:08,1,1353089,Will India’s 2026 Annual Inflation be between 3.00% and 3.74%?,economy,112.7,2410,0.007,0.018,0.0125,1.17
+2026-09-21 08:08,1,1353090,Will India’s 2026 Annual Inflation be between 3.75% and 4.49%?,economy,112.7,31997,0.028,0.052,0.04,19.52
+2026-09-21 08:08,1,2589860,Will Japan's core CPI increase by between 2.5 and 2.9% in 2026?,economy,123.7,5934,0.06,0.088,0.074,84.9
+2026-09-21 08:08,1,2589861,Will Japan's core CPI increase by between 3.0 and 3.4% in 2026?,economy,123.7,1884,0.001,0.005,0.003,3.62
+2026-09-21 08:08,1,2589862,Will Japan's core CPI increase by between 3.5 and 3.9% in 2026?,economy,123.7,1324,,0.012,0.012,2.6
+2026-09-21 08:08,1,2589863,Will Japan's core CPI increase by at least 4.0% in 2026?,economy,123.7,1675,0.001,0.012,0.0065,2.65
+2026-09-21 08:08,1,2589866,Will Japan's core-core CPI increase by between 2.5 and 2.9% in 2026?,economy,144.7,11486,0.005,0.011,0.008,40.84
+2026-09-21 08:08,1,2589867,Will Japan's core-core CPI increase by between 3.0 and 3.4% in 2026?,economy,144.7,2584,0.001,0.002,0.0015,2.04
+2026-09-21 08:08,1,2589868,Will Japan's core-core CPI increase by between 3.5 and 3.9% in 2026?,economy,144.7,1485,,0.001,0.001,3.39
+2026-09-21 08:08,1,2589869,Will Japan's core-core CPI increase by at least 4.0% in 2026?,economy,144.7,2072,,0.006,0.006,5.69
+2026-09-21 08:08,1,1126855,Will Venezuelan crude oil production reach 1.4m barrels per day in 2026?,economy,159.7,19852,0.018,0.096,0.057,24.66
+2026-09-21 08:08,1,1126857,Will Venezuelan crude oil production reach 1.7m barrels per day in 2026?,economy,159.7,59922,0.025,0.04,0.0325,4.34
+2026-09-21 08:08,1,1126858,Will Venezuelan crude oil production reach 2m barrels per day in 2026?,economy,159.7,16473,0.023,0.049,0.036,17.08
+2026-09-21 08:08,1,665494,Will Trump reduce the deficit before 2027? ,economy,160.9,3076,0.052,0.088,0.07,15.11
+2026-09-21 08:08,1,2062005,Japan recession in 2026?,economy,221.8,4283,0.03,0.05,0.04,1.47
+2026-09-21 08:08,1,3081880,"Will Warsh be out as Fed Chair by June 30, 2027?",economy,282.8,20307,0.09,0.1,0.095,1563.31
