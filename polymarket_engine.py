@@ -500,7 +500,9 @@ class Engine:
         seen, out = set(), []
         for slug, tid in self.tags.items():
             cat, k = CATEGORIES.get(slug, ("other", 0.94))
-            for m in scan_open(tid, self.a.max_days):
+            markets = scan_open(tid, self.a.max_days)
+            log(f"scanned {slug}: {len(markets)} open markets")
+            for m in markets:
                 if m.get("id") in seen or not m.get("enableOrderBook", True):
                     continue
                 seen.add(m.get("id"))
