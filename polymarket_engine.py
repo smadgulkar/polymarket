@@ -336,7 +336,12 @@ class LiveBroker:
         self.s = store
 
     def balance(self):
-        b = self.c.get_balance_allowance(self.BalParams(asset_type=self.AssetType.COLLATERAL))
+        params = self.BalParams(asset_type=self.AssetType.COLLATERAL)
+        try:  # the server caches balances; without a refresh it can report 0
+            self.c.update_balance_allowance(params)
+        except Exception as e:
+            log(f"balance refresh failed: {e}")
+        b = self.c.get_balance_allowance(params)
         return float(b["balance"]) / 1e6
 
     def place_bid(self, token, price, size):
