@@ -34,9 +34,9 @@ What the engine does, every --poll seconds:
 Paper mode is the default and simulates fills conservatively: a resting bid
 fills only when the NO ask later trades through it. Live mode needs --live
 plus POLY_FUNDER and POLY_PRIVATE_KEY_FILE (path to a chmod-600 file
-outside the repo holding the key; POLY_PRIVATE_KEY also works) and `pip install py-clob-client`.
+outside the repo holding the key; POLY_PRIVATE_KEY also works) and `pip install py-clob-client-v2`.
 
-Setup:  pip install curl_cffi            (live: also py-clob-client)
+Setup:  pip install curl_cffi            (live: also py-clob-client-v2)
 Run:    python polymarket_engine.py                    # paper, loops forever
         python polymarket_engine.py --once             # one cycle, print book
         python polymarket_engine.py --report           # PnL / positions from engine.db
@@ -307,17 +307,17 @@ class PaperBroker:
 
 
 class LiveBroker:
-    """Real orders through Polymarket's CLOB (py-clob-client). Untested here:
-    verify every method against the current py-clob-client docs with a $5
-    bankroll before trusting it."""
+    """Real orders through Polymarket CLOB V2 (py-clob-client-v2; V1 stopped
+    working at the April 2026 cutover). Collateral is pUSD.
+    POLY_SIGNATURE_TYPE: 0 EOA, 1 email/Magic proxy, 2 browser-wallet Safe,
+    3 deposit wallet (newer accounts). `--diagnose` shows which one holds funds."""
 
-    def __init__(self, store):
+    def __init__(self, store, sig_type=None):
         try:
-            from py_clob_client.client import ClobClient
-            from py_clob_client.clob_types import OrderArgs, OrderType, BalanceAllowanceParams, AssetType
-            from py_clob_client.order_builder.constants import BUY, SELL
+            from py_clob_client_v2 import (ClobClient, OrderArgs, OrderType, OrderPayload,
+                                           BalanceAllowanceParams, AssetType, Side)
         except ImportError:
-            sys.exit("Live mode needs:  pip install py-clob-client")
+            sys.exit("Live mode needs:  pip install py-clob-client-v2")
         key, funder = os.environ.get("POLY_PRIVATE_KEY"), os.environ.get("POLY_FUNDER")
         key_file = os.environ.get("POLY_PRIVATE_KEY_FILE")
         if not key and key_file:
@@ -327,12 +327,13 @@ class LiveBroker:
                 key = f.read().strip()
         if not key:
             sys.exit("Set POLY_PRIVATE_KEY_FILE (preferred) or POLY_PRIVATE_KEY")
-        self.OrderArgs, self.OrderType, self.BUY, self.SELL = OrderArgs, OrderType, BUY, SELL
+        if sig_type is None:
+            sig_type = int(os.environ.get("POLY_SIGNATURE_TYPE", "2"))
+        self.OrderArgs, self.OrderType, self.OrderPayload, self.Side = OrderArgs, OrderType, OrderPayload, Side
         self.BalParams, self.AssetType = BalanceAllowanceParams, AssetType
-        self.c = ClobClient(CLOB, key=key, chain_id=137,
-                            signature_type=int(os.environ.get("POLY_SIGNATURE_TYPE", "1")),
-                            funder=funder)
-        self.c.set_api_creds(self.c.create_or_derive_api_creds())
+        self.c = ClobClient(CLOB, chain_id=137, key=key, signature_type=sig_type,
+                            funder=funder if sig_type else None)
+        self.c.set_api_creds(self.c.create_or_derive_api_key())
         self.s = store
 
     def balance(self):
@@ -345,22 +346,28 @@ class LiveBroker:
         return float(b["balance"]) / 1e6
 
     def place_bid(self, token, price, size):
-        signed = self.c.create_order(self.OrderArgs(price=price, size=size, side=self.BUY, token_id=token))
-        r = self.c.post_order(signed, self.OrderType.GTC)
-        return r.get("orderID") if r and r.get("success") else None
+        # post_only: rest as a maker or be rejected -- never pay the spread
+        r = self.c.create_and_post_order(
+            order_args=self.OrderArgs(token_id=token, price=price, size=size, side=self.Side.BUY),
+            order_type=self.OrderType.GTC, post_only=True)
+        if not (r and r.get("success")):
+            log(f"order rejected: {r}")
+            return None
+        return r.get("orderID")
 
     def cancel(self, oid):
-        self.c.cancel(order_id=oid)
+        self.c.cancel_order(self.OrderPayload(orderID=oid))
         return True
 
     def sync(self, order, book):
-        o = self.c.get_order(order["id"])
+        o = self.c.get_order(order["id"]) or {}
         matched = float(o.get("size_matched", 0) or 0)
         return max(0.0, matched - order["filled"])
 
     def sell(self, token, shares, price):
-        signed = self.c.create_order(self.OrderArgs(price=price, size=shares, side=self.SELL, token_id=token))
-        r = self.c.post_order(signed, self.OrderType.FOK)
+        r = self.c.create_and_post_order(
+            order_args=self.OrderArgs(token_id=token, price=price, size=shares, side=self.Side.SELL),
+            order_type=self.OrderType.FAK)
         return bool(r and r.get("success"))
 
     def settle(self, pos, payout_no):
@@ -612,6 +619,7 @@ def main():
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--resume", action="store_true", help="clear a kill-switch halt and continue")
+    ap.add_argument("--diagnose", action="store_true", help="live: show signer and pUSD balance per signature type")
     ap.add_argument("--tags", nargs="+", default=list(CATEGORIES))
     # universe
     ap.add_argument("--min-yes", type=float, default=0.03)
@@ -642,6 +650,16 @@ def main():
     store = Store(args.db or ("engine_live.db" if args.live else "engine_paper.db"))
     if args.report:
         report(store)
+        return
+    if args.diagnose:
+        for st in (0, 1, 2, 3):
+            try:
+                b = LiveBroker(store, sig_type=st)
+                print(f"signature_type {st}: signer {b.c.get_address()}  pUSD balance {b.balance():.2f}")
+            except Exception as e:
+                print(f"signature_type {st}: error {type(e).__name__}: {e}")
+        print(f"funder (POLY_FUNDER): {os.environ.get('POLY_FUNDER')}")
+        print("Set POLY_SIGNATURE_TYPE in .env to the type that shows your balance.")
         return
     if args.resume:
         store.put("halted", None)
