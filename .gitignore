@@ -38,3 +38,8 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Engine state / caches
+*.db
+jev_market_text.json
+jev_tags.json

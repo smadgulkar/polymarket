@@ -1,0 +1,660 @@
+#!/usr/bin/env python3
+"""
+polymarket_engine.py  --  autonomous execution engine: "be the house for longshot buyers"
+
+Edge being harvested (documented, not assumed):
+  - arXiv 2609.12878 (588M Polymarket trades, 2022-2026): buyers of <10c
+    contracts who ACCEPT posted offers lose ~31c per $1 (equal-weighted);
+    longshots lose -16% in politics, -15% crypto, -25% weather, but are ~fair
+    in sports. Losses are largest around 20-25c. Parent events with MANY child
+    markets have worse longshot returns.
+  - Our own longshot_hv_samples.csv: 2-10c at 7-21d realized below price;
+    buying NO there returned +1.6% to +5.3% per holding period (small n).
+  => The person on the other side of a lottery ticket -- the resting SELLER of
+     cheap YES, i.e. the resting BUYER of expensive NO -- is paid by the bias.
+
+What the engine does, every --poll seconds:
+  1. SCAN     open non-sports markets in bias-heavy categories, YES priced
+              [--min-yes, --max-yes), ending in [--min-days, --max-days],
+              volume >= --min-volume
+  2. VALUE    fair YES = k_category * YES mid (k from the paper's category
+              returns, haircut by --k-haircut); fair NO = 1 - fair YES
+  3. QUOTE    post a MAKER bid on the NO token: join/improve the best NO bid,
+              never above fair NO - --min-edge, never crossing the ask
+              (never pays the spread; lottery buyers come to us)
+  4. SIZE     quarter-Kelly on the NO bet, capped per market / per event /
+              per category / gross deployed, from LIVE wallet cash
+  5. MANAGE   cancel+requote stale orders; exit if the thesis breaks
+              (YES mid >= max(--stop-mult x entry, --stop-yes)); optionally
+              sell NO >= --recycle-at early to recycle capital
+  6. SETTLE   resolved markets -> realize PnL (paper) / flag for redeem (live)
+  7. GUARD    daily loss > --daily-stop or drawdown > --max-dd: cancel all,
+              stop opening; state persists in engine.db across restarts
+
+Paper mode is the default and simulates fills conservatively: a resting bid
+fills only when the NO ask later trades through it. Live mode needs --live
+plus POLY_FUNDER and POLY_PRIVATE_KEY_FILE (path to a chmod-600 file
+outside the repo holding the key; POLY_PRIVATE_KEY also works) and `pip install py-clob-client`.
+
+Setup:  pip install curl_cffi            (live: also py-clob-client)
+Run:    python polymarket_engine.py                    # paper, loops forever
+        python polymarket_engine.py --once             # one cycle, print book
+        python polymarket_engine.py --report           # PnL / positions from engine.db
+        python polymarket_engine.py --live             # real orders (read RISK below)
+
+RISK, stated once: this sells lottery tickets. It wins small and often and
+loses ~1/price times the stake when a longshot hits -- and longshots in the
+same event/region hit TOGETHER, which is why caps are per event and per
+category. The edge is ~1-3c per contract before adverse selection; it is a
+grind, not a jackpot. Run paper for 2+ weeks and compare engine.db against
+these numbers before --live.
+"""
+
+import argparse
+import json
+import math
+import os
+import sqlite3
+import sys
+import time
+from datetime import datetime, timezone, timedelta
+
+try:
+    from curl_cffi import requests
+except ImportError:
+    sys.exit("curl_cffi not installed. Run:  pip install curl_cffi")
+
+GAMMA = "https://gamma-api.polymarket.com"
+CLOB = "https://clob.polymarket.com"
+SESSION = requests.Session(impersonate="chrome")
+
+# tag slug -> (category, k = realized/price for longshots). k from arXiv
+# 2609.12878 Table 8 (equal child-market weighting, purchases < 10c):
+# politics -16.3%, crypto -14.8%, weather -25.2%, finance -2.6%. Sports is
+# excluded (no bias). Unlisted tags fall back to the pooled -6.3%.
+CATEGORIES = {
+    "politics": ("politics", 0.84), "elections": ("politics", 0.84),
+    "geopolitics": ("politics", 0.84), "world": ("politics", 0.84),
+    "crypto": ("crypto", 0.85), "weather": ("weather", 0.75),
+    "economy": ("finance", 0.97), "finance": ("finance", 0.97),
+    "tech": ("other", 0.94), "pop-culture": ("other", 0.94), "business": ("other", 0.94),
+}
+
+
+# ----------------------------------------------------------------- helpers
+def now_utc():
+    return datetime.now(timezone.utc)
+
+
+def load_env(path):
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+def get_json(url, params=None, retries=3, backoff=1.0):
+    for attempt in range(retries):
+        try:
+            r = SESSION.get(url, params=params, timeout=25)
+            if r.status_code == 429 or r.status_code >= 500:
+                time.sleep(backoff * (attempt + 1) * 2)
+                continue
+            if r.status_code >= 400:
+                return None
+            return r.json()
+        except Exception:
+            time.sleep(backoff * (attempt + 1))
+    return None
+
+
+def parse_iso(s):
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(s).replace("Z", "+00:00").replace(" ", "T"))
+        return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def parse_list(v):
+    if isinstance(v, list):
+        return v
+    try:
+        return json.loads(v) if isinstance(v, str) else None
+    except json.JSONDecodeError:
+        return None
+
+
+def to_float(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def round_down(x, tick):
+    return math.floor(x / tick + 1e-9) * tick
+
+
+def log(msg):
+    print(f"[{now_utc():%Y-%m-%d %H:%M:%S}] {msg}", flush=True)
+
+
+# ----------------------------------------------------------------- market data
+def resolve_tags(slugs):
+    out = {}
+    for s in slugs:
+        t = get_json(f"{GAMMA}/tags/slug/{s}")
+        if isinstance(t, dict) and "id" in t:
+            out[s] = t["id"]
+        time.sleep(0.1)
+    return out
+
+
+def scan_open(tag_id, max_days, page_size=100, max_pages=20):
+    end_min = now_utc().strftime("%Y-%m-%dT%H:%M:%SZ")
+    end_max = (now_utc() + timedelta(days=max_days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    out = []
+    for page_i in range(max_pages):
+        page = get_json(f"{GAMMA}/markets", params={
+            "closed": "false", "active": "true", "limit": page_size, "offset": page_i * page_size,
+            "tag_id": tag_id, "end_date_min": end_min, "end_date_max": end_max,
+            "order": "endDate", "ascending": "true"})
+        if not isinstance(page, list) or not page:
+            break
+        out.extend(page)
+        if len(page) < page_size:
+            break
+        time.sleep(0.1)
+    return out
+
+
+def tokens_of(m):
+    """(yes_token, no_token, yes_index) for a binary Yes/No market, else None."""
+    outs, toks = parse_list(m.get("outcomes")), parse_list(m.get("clobTokenIds"))
+    if not (outs and toks and len(outs) == len(toks) == 2):
+        return None
+    labels = [str(o).strip().lower() for o in outs]
+    if labels != ["yes", "no"] and labels != ["no", "yes"]:
+        return None
+    y = labels.index("yes")
+    return toks[y], toks[1 - y], y
+
+
+def fetch_book(token):
+    d = get_json(f"{CLOB}/book", params={"token_id": token})
+    if not isinstance(d, dict):
+        return None
+    bids = sorted([(to_float(b.get("price")), to_float(b.get("size"))) for b in d.get("bids", [])],
+                  key=lambda x: -(x[0] or 0))
+    asks = sorted([(to_float(a.get("price")), to_float(a.get("size"))) for a in d.get("asks", [])],
+                  key=lambda x: x[0] if x[0] is not None else 9)
+    bids = [(p, s) for p, s in bids if p and s]
+    asks = [(p, s) for p, s in asks if p and s]
+    return {"bids": bids, "asks": asks,
+            "bid": bids[0][0] if bids else None, "ask": asks[0][0] if asks else None}
+
+
+def market_status(market_id):
+    """None if still open; else final YES payout (1.0 / 0.0 / fractional)."""
+    m = get_json(f"{GAMMA}/markets/{market_id}")
+    if not isinstance(m, dict) or not m.get("closed"):
+        return None
+    outs, fin = parse_list(m.get("outcomes")), parse_list(m.get("outcomePrices"))
+    if not (outs and fin):
+        return None
+    labels = [str(o).strip().lower() for o in outs]
+    p = to_float(fin[labels.index("yes")] if "yes" in labels else fin[0])
+    if p is None or 0.02 < p < 0.98:   # closed but not yet settled by UMA
+        return None
+    return round(p)
+
+
+# ----------------------------------------------------------------- state
+SCHEMA = """
+create table if not exists orders(id text primary key, token text, market_id text, event_id text,
+  category text, question text, side text, price real, size real, filled real default 0,
+  status text, created text, yes_mid real, end_date text);
+create table if not exists positions(token text primary key, market_id text, event_id text,
+  category text, question text, shares real, cost real, entry_yes real, end_date text,
+  opened text, status text default 'open', exit_value real, closed text);
+create table if not exists equity(ts text, cash real, position_value real, total real);
+create table if not exists kv(k text primary key, v text);
+"""
+
+
+class Store:
+    def __init__(self, path):
+        self.db = sqlite3.connect(path)
+        self.db.row_factory = sqlite3.Row
+        self.db.executescript(SCHEMA)
+
+    def q(self, sql, *a):
+        return self.db.execute(sql, a).fetchall()
+
+    def x(self, sql, *a):
+        self.db.execute(sql, a)
+        self.db.commit()
+
+    def get(self, k, default=None):
+        r = self.q("select v from kv where k=?", k)
+        return json.loads(r[0]["v"]) if r else default
+
+    def put(self, k, v):
+        self.x("insert or replace into kv values(?,?)", k, json.dumps(v))
+
+    def open_orders(self):
+        return self.q("select * from orders where status='open'")
+
+    def open_positions(self):
+        return self.q("select * from positions where status='open'")
+
+    def add_fill(self, o, shares, price):
+        self.x("update orders set filled=filled+?, status=case when filled+?>=size-1e-6 then 'filled' "
+               "else status end where id=?", shares, shares, o["id"])
+        p = self.q("select * from positions where token=?", o["token"])
+        if p and p[0]["status"] == "open":
+            self.x("update positions set shares=shares+?, cost=cost+? where token=?",
+                   shares, shares * price, o["token"])
+        else:
+            self.x("insert or replace into positions(token,market_id,event_id,category,question,shares,"
+                   "cost,entry_yes,end_date,opened,status) values(?,?,?,?,?,?,?,?,?,?,'open')",
+                   o["token"], o["market_id"], o["event_id"], o["category"], o["question"],
+                   shares, shares * price, o["yes_mid"], o["end_date"], now_utc().isoformat())
+
+
+# ----------------------------------------------------------------- brokers
+class PaperBroker:
+    """Simulated wallet. Maker bids fill only when the NO ask trades through
+    them on a later poll -- conservative, so paper fill rates UNDERSTATE live."""
+
+    def __init__(self, store, bankroll):
+        self.s = store
+        if self.s.get("paper_cash") is None:
+            self.s.put("paper_cash", bankroll)
+
+    def balance(self):
+        return self.s.get("paper_cash")
+
+    def place_bid(self, token, price, size):
+        oid = f"paper-{token[-8:]}-{int(time.time() * 1000)}"
+        return oid
+
+    def cancel(self, oid):
+        return True
+
+    def sync(self, order, book):
+        """Return shares newly filled for this order."""
+        if book and book["ask"] is not None and book["ask"] <= order["price"]:
+            avail = sum(s for p, s in book["asks"] if p <= order["price"])
+            fill = min(order["size"] - order["filled"], avail)
+            self.s.put("paper_cash", self.s.get("paper_cash") - fill * order["price"])
+            return fill
+        return 0.0
+
+    def sell(self, token, shares, price):
+        self.s.put("paper_cash", self.s.get("paper_cash") + shares * price)
+        return True
+
+    def settle(self, pos, payout_no):
+        self.s.put("paper_cash", self.s.get("paper_cash") + pos["shares"] * payout_no)
+
+
+class LiveBroker:
+    """Real orders through Polymarket's CLOB (py-clob-client). Untested here:
+    verify every method against the current py-clob-client docs with a $5
+    bankroll before trusting it."""
+
+    def __init__(self, store):
+        try:
+            from py_clob_client.client import ClobClient
+            from py_clob_client.clob_types import OrderArgs, OrderType, BalanceAllowanceParams, AssetType
+            from py_clob_client.order_builder.constants import BUY, SELL
+        except ImportError:
+            sys.exit("Live mode needs:  pip install py-clob-client")
+        key, funder = os.environ.get("POLY_PRIVATE_KEY"), os.environ.get("POLY_FUNDER")
+        key_file = os.environ.get("POLY_PRIVATE_KEY_FILE")
+        if not key and key_file:
+            if os.name == "posix" and os.stat(key_file).st_mode & 0o077:
+                sys.exit(f"{key_file} is readable by other users; run: chmod 600 {key_file}")
+            with open(key_file, encoding="utf-8") as f:
+                key = f.read().strip()
+        if not key:
+            sys.exit("Set POLY_PRIVATE_KEY_FILE (preferred) or POLY_PRIVATE_KEY")
+        self.OrderArgs, self.OrderType, self.BUY, self.SELL = OrderArgs, OrderType, BUY, SELL
+        self.BalParams, self.AssetType = BalanceAllowanceParams, AssetType
+        self.c = ClobClient(CLOB, key=key, chain_id=137,
+                            signature_type=int(os.environ.get("POLY_SIGNATURE_TYPE", "1")),
+                            funder=funder)
+        self.c.set_api_creds(self.c.create_or_derive_api_creds())
+        self.s = store
+
+    def balance(self):
+        b = self.c.get_balance_allowance(self.BalParams(asset_type=self.AssetType.COLLATERAL))
+        return float(b["balance"]) / 1e6
+
+    def place_bid(self, token, price, size):
+        signed = self.c.create_order(self.OrderArgs(price=price, size=size, side=self.BUY, token_id=token))
+        r = self.c.post_order(signed, self.OrderType.GTC)
+        return r.get("orderID") if r and r.get("success") else None
+
+    def cancel(self, oid):
+        self.c.cancel(order_id=oid)
+        return True
+
+    def sync(self, order, book):
+        o = self.c.get_order(order["id"])
+        matched = float(o.get("size_matched", 0) or 0)
+        return max(0.0, matched - order["filled"])
+
+    def sell(self, token, shares, price):
+        signed = self.c.create_order(self.OrderArgs(price=price, size=shares, side=self.SELL, token_id=token))
+        r = self.c.post_order(signed, self.OrderType.FOK)
+        return bool(r and r.get("success"))
+
+    def settle(self, pos, payout_no):
+        # Winning shares must be redeemed on-chain (CTF redeemPositions) or via the
+        # Polymarket UI; the engine records the value and flags it.
+        log(f"REDEEM NEEDED: {pos['question'][:70]} ({pos['shares']:.1f} NO shares)")
+
+
+# ----------------------------------------------------------------- engine
+class Engine:
+    def __init__(self, args, store, broker):
+        self.a, self.s, self.b = args, store, broker
+        self.tags = {}
+
+    # ---- valuation / sizing
+    def fair_no(self, yes_mid, k):
+        return 1.0 - min(1.0, yes_mid * k * (1 + self.a.k_haircut))
+
+    def kelly_frac(self, q_no, price):
+        if price >= 1 or q_no <= price:
+            return 0.0
+        return self.a.kelly * (q_no - price) / (1 - price)
+
+    def reserved(self):
+        return sum(o["price"] * (o["size"] - o["filled"]) for o in self.s.open_orders())
+
+    def available(self):
+        # conservative in live mode if the exchange balance already nets out resting orders
+        return self.b.balance() - self.reserved()
+
+    def equity(self):
+        pv = 0.0
+        for p in self.s.open_positions():
+            pv += p["shares"] * (self.s.get(f"mark:{p['token']}", p["cost"] / max(p["shares"], 1e-9)))
+        return self.b.balance(), pv
+
+    def exposure(self):
+        by_mkt, by_evt, by_cat, gross = {}, {}, {}, 0.0
+        rows = [(p["market_id"], p["event_id"], p["category"], p["cost"]) for p in self.s.open_positions()]
+        rows += [(o["market_id"], o["event_id"], o["category"], o["price"] * (o["size"] - o["filled"]))
+                 for o in self.s.open_orders()]
+        for m, e, c, v in rows:
+            by_mkt[m] = by_mkt.get(m, 0) + v
+            by_evt[e] = by_evt.get(e, 0) + v
+            by_cat[c] = by_cat.get(c, 0) + v
+            gross += v
+        return by_mkt, by_evt, by_cat, gross
+
+    # ---- risk guard
+    def guard(self):
+        cash, pv = self.equity()
+        total = cash + pv
+        self.s.x("insert into equity values(?,?,?,?)", now_utc().isoformat(), cash, pv, total)
+        peak = max(self.s.get("peak", total), total)
+        self.s.put("peak", peak)
+        day = now_utc().strftime("%Y-%m-%d")
+        if self.s.get("day") != day:
+            self.s.put("day", day)
+            self.s.put("day_start", total)
+        day_start = self.s.get("day_start", total)
+        halted = self.s.get("halted")
+        if not halted and total < day_start * (1 - self.a.daily_stop):
+            halted = f"daily loss {total / day_start - 1:+.1%} on {day}"
+        if not halted and total < peak * (1 - self.a.max_dd):
+            halted = f"drawdown {total / peak - 1:+.1%} from peak {peak:.2f}"
+        if halted and not self.s.get("halted"):
+            log(f"KILL SWITCH: {halted} -- cancelling all orders, no new entries")
+            self.s.put("halted", halted)
+            self.cancel_all()
+        return total, bool(halted)
+
+    def cancel_all(self):
+        for o in self.s.open_orders():
+            self.b.cancel(o["id"])
+            self.s.x("update orders set status='cancelled' where id=?", o["id"])
+
+    # ---- cycle steps
+    def sync_orders(self):
+        for o in self.s.open_orders():
+            book = fetch_book(o["token"])
+            fill = self.b.sync(o, book)
+            if fill > 0:
+                self.s.add_fill(o, fill, o["price"])
+                log(f"FILL  {fill:.1f} NO @ {o['price']:.3f}  {o['question'][:70]}")
+            age_min = (now_utc() - parse_iso(o["created"])).total_seconds() / 60
+            if age_min >= self.a.reprice_min and self.s.q("select status from orders where id=?", o["id"])[0][0] == "open":
+                self.b.cancel(o["id"])
+                self.s.x("update orders set status='cancelled' where id=?", o["id"])
+
+    def settle_and_exit(self):
+        for p in self.s.open_positions():
+            res = market_status(p["market_id"])
+            if res is not None:
+                payout_no = 1.0 - res
+                self.b.settle(p, payout_no)
+                self.s.x("update positions set status='closed', exit_value=?, closed=? where token=?",
+                         p["shares"] * payout_no, now_utc().isoformat(), p["token"])
+                log(f"SETTLED {'WIN ' if payout_no else 'LOSS'} pnl={p['shares'] * payout_no - p['cost']:+.2f}"
+                    f"  {p['question'][:70]}")
+                continue
+            book = fetch_book(p["token"])
+            if not book or book["bid"] is None:
+                continue
+            self.s.put(f"mark:{p['token']}", book["bid"])
+            yes_mid_now = 1.0 - ((book["bid"] + (book["ask"] or book["bid"])) / 2)
+            stop_at = max(self.a.stop_mult * (p["entry_yes"] or 0), self.a.stop_yes)
+            reason = None
+            if yes_mid_now >= stop_at:
+                reason = f"STOP yes_mid {yes_mid_now:.3f} >= {stop_at:.3f}"
+            elif self.a.recycle_at and book["bid"] >= self.a.recycle_at:
+                reason = f"RECYCLE bid {book['bid']:.3f}"
+            if reason:
+                px = round(book["bid"] - 0.02, 3) if reason.startswith("STOP") else book["bid"]
+                shares = min(p["shares"], sum(s for pr, s in book["bids"] if pr >= px))
+                if shares > 0 and self.b.sell(p["token"], shares, px):
+                    left = p["shares"] - shares
+                    frac = shares / p["shares"]
+                    if left <= 1e-6:
+                        self.s.x("update positions set status='closed', exit_value=?, closed=? where token=?",
+                                 shares * px, now_utc().isoformat(), p["token"])
+                    else:
+                        self.s.x("update positions set shares=?, cost=cost*? where token=?",
+                                 left, 1 - frac, p["token"])
+                    log(f"{reason}: sold {shares:.1f} @ {px:.3f}  {p['question'][:60]}")
+
+    def candidates(self):
+        if not self.tags:
+            self.tags = resolve_tags(self.a.tags)
+            log(f"tags resolved: {', '.join(self.tags)}")
+        seen, out = set(), []
+        for slug, tid in self.tags.items():
+            cat, k = CATEGORIES.get(slug, ("other", 0.94))
+            for m in scan_open(tid, self.a.max_days):
+                if m.get("id") in seen or not m.get("enableOrderBook", True):
+                    continue
+                seen.add(m.get("id"))
+                toks = tokens_of(m)
+                end = parse_iso(m.get("endDate"))
+                vol = to_float(m.get("volumeNum") or m.get("volume")) or 0
+                prices = parse_list(m.get("outcomePrices"))
+                if not (toks and end and prices) or vol < self.a.min_volume:
+                    continue
+                days = (end - now_utc()).total_seconds() / 86400
+                if not (self.a.min_days <= days <= self.a.max_days):
+                    continue
+                last_yes = to_float(prices[toks[2]])
+                if last_yes is None or not (self.a.min_yes <= last_yes < self.a.max_yes):
+                    continue
+                ev = (m.get("events") or [{}])[0]
+                out.append({"market_id": str(m["id"]), "event_id": str(ev.get("id", m["id"])),
+                            "n_children": len(ev.get("markets") or []) or 1, "category": cat, "k": k,
+                            "question": m.get("question") or "", "yes_tok": toks[0], "no_tok": toks[1],
+                            "end": end.isoformat(), "days": days, "vol": vol,
+                            "tick": to_float(m.get("orderPriceMinTickSize")) or 0.01,
+                            "min_size": to_float(m.get("orderMinSize")) or 5})
+        # many-child events first (paper: their longshots are the most overpriced)
+        out.sort(key=lambda c: (-c["n_children"], -c["vol"]))
+        return out
+
+    def enter(self, equity):
+        by_mkt, by_evt, by_cat, gross = self.exposure()
+        held = {p["market_id"] for p in self.s.open_positions()} | {o["market_id"] for o in self.s.open_orders()}
+        placed = 0
+        for c in self.candidates():
+            if placed >= self.a.max_new or c["market_id"] in held:
+                continue
+            yb, nb = fetch_book(c["yes_tok"]), fetch_book(c["no_tok"])
+            if not (yb and nb and yb["bid"] is not None and yb["ask"] is not None and nb["ask"] is not None):
+                continue
+            yes_mid = (yb["bid"] + yb["ask"]) / 2
+            if not (self.a.min_yes <= yes_mid < self.a.max_yes):
+                continue
+            fair = self.fair_no(yes_mid, c["k"])
+            tick = c["tick"]
+            best_bid = nb["bid"] or 0.0
+            price = min(round_down(fair - self.a.min_edge, tick), round(nb["ask"] - tick, 6),
+                        round(best_bid + tick, 6))
+            if price <= 0 or price < best_bid or fair - price < self.a.min_edge:
+                continue
+            f = self.kelly_frac(fair, price)
+            budget = min(f * equity,
+                         self.a.cap_market * equity - by_mkt.get(c["market_id"], 0),
+                         self.a.cap_event * equity - by_evt.get(c["event_id"], 0),
+                         self.a.cap_category * equity - by_cat.get(c["category"], 0),
+                         self.a.cap_gross * equity - gross,
+                         self.available() - self.a.cash_buffer * equity)
+            size = math.floor(budget / price)
+            if size < c["min_size"]:
+                continue
+            oid = self.b.place_bid(c["no_tok"], price, size)
+            if not oid:
+                continue
+            self.s.x("insert into orders values(?,?,?,?,?,?,?,?,?,0,'open',?,?,?)", oid, c["no_tok"],
+                     c["market_id"], c["event_id"], c["category"], c["question"], "BUY_NO", price, size,
+                     now_utc().isoformat(), yes_mid, c["end"])
+            cost = price * size
+            by_mkt[c["market_id"]] = by_mkt.get(c["market_id"], 0) + cost
+            by_evt[c["event_id"]] = by_evt.get(c["event_id"], 0) + cost
+            by_cat[c["category"]] = by_cat.get(c["category"], 0) + cost
+            gross += cost
+            placed += 1
+            log(f"BID   {size:>5} NO @ {price:.3f} (fair {fair:.3f}, yes {yes_mid:.3f}, {c['days']:.0f}d, "
+                f"{c['category']}, {c['n_children']} legs)  {c['question'][:60]}")
+
+    def cycle(self):
+        self.sync_orders()
+        self.settle_and_exit()
+        total, halted = self.guard()
+        if not halted:
+            self.enter(total)
+        cash, pv = self.equity()
+        log(f"equity {cash + pv:.2f}  (cash {cash:.2f}, positions {pv:.2f}, "
+            f"{len(self.s.open_positions())} pos, {len(self.s.open_orders())} orders)"
+            + (f"  HALTED: {self.s.get('halted')}" if halted else ""))
+
+
+def report(store):
+    closed = store.q("select * from positions where status='closed'")
+    opn = store.open_positions()
+    pnl = sum(p["exit_value"] - p["cost"] for p in closed)
+    wins = sum(1 for p in closed if p["exit_value"] > p["cost"])
+    print(f"closed {len(closed)}  wins {wins}  realized pnl {pnl:+.2f}  "
+          f"return on cost {pnl / max(sum(p['cost'] for p in closed), 1e-9):+.2%}")
+    by = {}
+    for p in closed:
+        b = by.setdefault(p["category"], [0, 0.0, 0.0])
+        b[0] += 1
+        b[1] += p["cost"]
+        b[2] += p["exit_value"] - p["cost"]
+    for c, (n, cost, pl) in sorted(by.items()):
+        print(f"  {c:<10} n={n:<4} cost={cost:>9.2f}  pnl={pl:+9.2f}  ({pl / cost:+.2%})")
+    print(f"\nopen positions: {len(opn)}")
+    for p in opn:
+        print(f"  {p['shares']:>7.1f} NO  cost {p['cost']:>8.2f}  entry_yes {p['entry_yes']:.3f}  "
+              f"ends {p['end_date'][:10]}  {p['question'][:60]}")
+    eq = store.q("select * from equity order by ts desc limit 1")
+    if eq:
+        print(f"\nlast equity {eq[0]['total']:.2f} at {eq[0]['ts'][:16]}  peak {store.get('peak')}"
+              + (f"  HALTED: {store.get('halted')}" if store.get("halted") else ""))
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--live", action="store_true", help="send real orders (default: paper)")
+    ap.add_argument("--db", default=None, help="state file (default engine_paper.db / engine_live.db)")
+    ap.add_argument("--env-file", default=".env")
+    ap.add_argument("--bankroll", type=float, default=1000.0, help="paper starting cash")
+    ap.add_argument("--poll", type=int, default=300, help="seconds between cycles")
+    ap.add_argument("--once", action="store_true")
+    ap.add_argument("--report", action="store_true")
+    ap.add_argument("--resume", action="store_true", help="clear a kill-switch halt and continue")
+    ap.add_argument("--tags", nargs="+", default=list(CATEGORIES))
+    # universe
+    ap.add_argument("--min-yes", type=float, default=0.03)
+    ap.add_argument("--max-yes", type=float, default=0.25)
+    ap.add_argument("--min-days", type=float, default=1.0)
+    ap.add_argument("--max-days", type=float, default=45.0)
+    ap.add_argument("--min-volume", type=float, default=25000)
+    # pricing
+    ap.add_argument("--k-haircut", type=float, default=0.10, help="inflate fair YES by this for model error")
+    ap.add_argument("--min-edge", type=float, default=0.01, help="min fair NO minus bid, in $")
+    ap.add_argument("--reprice-min", type=float, default=30, help="cancel/requote orders older than this")
+    # sizing / risk
+    ap.add_argument("--kelly", type=float, default=0.25)
+    ap.add_argument("--cap-market", type=float, default=0.03)
+    ap.add_argument("--cap-event", type=float, default=0.06)
+    ap.add_argument("--cap-category", type=float, default=0.30)
+    ap.add_argument("--cap-gross", type=float, default=0.75)
+    ap.add_argument("--cash-buffer", type=float, default=0.10)
+    ap.add_argument("--max-new", type=int, default=10, help="max new orders per cycle")
+    ap.add_argument("--stop-mult", type=float, default=3.0)
+    ap.add_argument("--stop-yes", type=float, default=0.35)
+    ap.add_argument("--recycle-at", type=float, default=0.99, help="sell NO at/above this bid (0=off)")
+    ap.add_argument("--daily-stop", type=float, default=0.05)
+    ap.add_argument("--max-dd", type=float, default=0.15)
+    args = ap.parse_args()
+
+    load_env(args.env_file)
+    store = Store(args.db or ("engine_live.db" if args.live else "engine_paper.db"))
+    if args.report:
+        report(store)
+        return
+    if args.resume:
+        store.put("halted", None)
+        store.put("peak", None)
+    broker = LiveBroker(store) if args.live else PaperBroker(store, args.bankroll)
+    eng = Engine(args, store, broker)
+    log(f"engine start: {'LIVE' if args.live else 'PAPER'}  cash {broker.balance():.2f}")
+    while True:
+        try:
+            eng.cycle()
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:  # keep running through transient API failures
+            log(f"cycle error: {type(e).__name__}: {e}")
+        if args.once:
+            break
+        time.sleep(args.poll)
+
+
+if __name__ == "__main__":
+    main()
