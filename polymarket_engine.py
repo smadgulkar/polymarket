@@ -17,7 +17,10 @@ What the engine does, every --poll seconds:
   1. SCAN     open non-sports markets in bias-heavy categories, YES priced
               [--min-yes, --max-yes), ending in [--min-days, --max-days],
               volume >= --min-volume
-  2. VALUE    fair YES = k_category * YES mid (k from the paper's category
+  2. VALUE    crypto price markets: fair YES from the Deribit options surface
+              (polymarket_crypto_longshots), at IV and IV x 1.1, whichever is
+              higher; other crypto markets skipped. Everything else:
+              fair YES = k_category * YES mid (k from the paper's category
               returns, haircut by --k-haircut); fair NO = 1 - fair YES
   3. QUOTE    post a MAKER bid on the NO token: join/improve the best NO bid,
               never above fair NO - --min-edge, never crossing the ask
@@ -60,6 +63,8 @@ import sqlite3
 import sys
 import time
 from datetime import datetime, timezone, timedelta
+
+import polymarket_crypto_longshots as CL
 
 try:
     from curl_cffi import requests
@@ -159,21 +164,37 @@ def resolve_tags(slugs):
     return out
 
 
-def scan_open(tag_id, max_days, page_size=100, max_pages=20):
-    end_min = now_utc().strftime("%Y-%m-%dT%H:%M:%SZ")
-    end_max = (now_utc() + timedelta(days=max_days)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    out = []
-    for page_i in range(max_pages):
-        page = get_json(f"{GAMMA}/markets", params={
-            "closed": "false", "active": "true", "limit": page_size, "offset": page_i * page_size,
-            "tag_id": tag_id, "end_date_min": end_min, "end_date_max": end_max,
-            "order": "endDate", "ascending": "true"})
-        if not isinstance(page, list) or not page:
-            break
-        out.extend(page)
-        if len(page) < page_size:
-            break
-        time.sleep(0.1)
+def scan_open(tag_id, max_days, page_size=100, offset_cap=1000, max_total=30000):
+    """All open markets under a tag ending within max_days. Gamma stops paging at an
+    offset cap, so walk forward by restarting from the latest endDate seen."""
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
+    end_min = now_utc().strftime(fmt)
+    end_max = (now_utc() + timedelta(days=max_days)).strftime(fmt)
+    out, seen = [], set()
+    while len(out) < max_total:
+        page, offset = [], 0
+        while offset < offset_cap:
+            page = get_json(f"{GAMMA}/markets", params={
+                "closed": "false", "active": "true", "limit": page_size, "offset": offset,
+                "tag_id": tag_id, "end_date_min": end_min, "end_date_max": end_max,
+                "order": "endDate", "ascending": "true"})
+            if not isinstance(page, list) or not page:
+                return out
+            for m in page:
+                if m.get("id") not in seen:
+                    seen.add(m.get("id"))
+                    out.append(m)
+            if len(page) < page_size:
+                return out
+            offset += page_size
+            time.sleep(0.1)
+        latest = max((e for e in (parse_iso(m.get("endDate")) for m in page) if e), default=None)
+        if latest is None:
+            return out
+        nxt = latest.strftime(fmt)
+        if nxt <= end_min:  # more than offset_cap markets share one endDate: step past it
+            nxt = (latest + timedelta(seconds=1)).strftime(fmt)
+        end_min = nxt
     return out
 
 
@@ -406,6 +427,37 @@ class Engine:
     def fair_no(self, yes_mid, k):
         return 1.0 - min(1.0, yes_mid * k * (1 + self.a.k_haircut))
 
+    # ---- crypto fair value from Deribit options
+    def refresh_surfaces(self):
+        if "crypto" not in self.a.tags:
+            return
+        self.surfaces = {}
+        for asset in CL.ASSETS:
+            try:
+                s = CL.Surface(asset)
+            except Exception as e:
+                log(f"deribit {asset}: {type(e).__name__}: {e}")
+                continue
+            if s.ok:
+                self.surfaces[asset] = s
+        if not self.surfaces:
+            log("deribit: no surfaces -- crypto markets skipped this cycle")
+
+    def crypto_parse(self, question):
+        p = CL.parse_question(question)
+        return p if p and p["asset"] in getattr(self, "surfaces", {}) else None
+
+    def deribit_fair_no(self, parsed, days):
+        """Conservative P(NO) for SELLING the YES: options already overprice tails,
+        and we bump vol further, taking whichever makes YES more likely."""
+        surf = self.surfaces.get(parsed["asset"])
+        if surf is None or days <= 0:
+            return None
+        t = days / 365
+        p_yes = max(CL.model_prob(surf, parsed, t, 1.0),
+                    CL.model_prob(surf, parsed, t, 1.0 + self.a.deribit_vol_bump))
+        return 1.0 - p_yes
+
     def kelly_frac(self, q_no, price):
         if price >= 1 or q_no <= price:
             return 0.0
@@ -472,8 +524,20 @@ class Engine:
             if fill > 0:
                 self.s.add_fill(o, fill, o["price"])
                 log(f"FILL  {fill:.1f} NO @ {o['price']:.3f}  {o['question'][:70]}")
+            if self.s.q("select status from orders where id=?", o["id"])[0][0] != "open":
+                continue
             age_min = (now_utc() - parse_iso(o["created"])).total_seconds() / 60
-            if age_min >= self.a.reprice_min and self.s.q("select status from orders where id=?", o["id"])[0][0] == "open":
+            stale = age_min >= self.a.reprice_min
+            # crypto fair value moves with spot: pull a resting bid the moment it's no longer cheap
+            parsed = self.crypto_parse(o["question"]) if o["category"] == "crypto" else None
+            if parsed and not stale:
+                days = (parse_iso(o["end_date"]) - now_utc()).total_seconds() / 86400
+                fair = self.deribit_fair_no(parsed, days)
+                if fair is None or o["price"] > fair - self.a.min_edge:
+                    stale = True
+                    log(f"PULL  NO @ {o['price']:.3f} now above fair {fair if fair is not None else float('nan'):.3f} - edge"
+                        f"  {o['question'][:60]}")
+            if stale:
                 self.b.cancel(o["id"])
                 self.s.x("update orders set status='cancelled' where id=?", o["id"])
 
@@ -567,11 +631,16 @@ class Engine:
                 last_yes = to_float(prices[toks[2]])
                 if last_yes is None or not (self.a.min_yes <= last_yes < self.a.max_yes):
                     continue
+                deribit = None
+                if cat == "crypto":
+                    deribit = self.crypto_parse(m.get("question") or "")
+                    if deribit is None and not self.a.crypto_any:
+                        continue  # memecoins, token launches: no fair value, don't guess
                 ev = (m.get("events") or [{}])[0]
                 out.append({"market_id": str(m["id"]), "event_id": str(ev.get("id", m["id"])),
                             "n_children": len(ev.get("markets") or []) or 1, "category": cat, "k": k,
                             "question": m.get("question") or "", "yes_tok": toks[0], "no_tok": toks[1],
-                            "end": end.isoformat(), "days": days, "vol": vol,
+                            "end": end.isoformat(), "days": days, "vol": vol, "deribit": deribit,
                             "tick": to_float(m.get("orderPriceMinTickSize")) or 0.01,
                             "min_size": to_float(m.get("orderMinSize")) or 5})
         # many-child events first (paper: their longshots are the most overpriced)
@@ -586,7 +655,12 @@ class Engine:
         yes_mid = (yb["bid"] + yb["ask"]) / 2
         if not (self.a.min_yes <= yes_mid < self.a.max_yes):
             return None
-        fair = self.fair_no(yes_mid, c["k"])
+        if c.get("deribit"):
+            fair = self.deribit_fair_no(c["deribit"], c["days"])
+            if fair is None:
+                return None
+        else:
+            fair = self.fair_no(yes_mid, c["k"])
         tick = c["tick"]
         best_bid = nb["bid"] or 0.0
         price = min(round_down(fair - self.a.min_edge, tick), round(nb["ask"] - tick, 6),
@@ -595,7 +669,8 @@ class Engine:
             return None
         # capital is locked until resolution: rank by expected return per year locked
         ann = (fair - price) / price * 365 / max(c["days"], 0.5)
-        return {**c, "yes_mid": yes_mid, "fair": fair, "price": price, "ann": ann}
+        return {**c, "yes_mid": yes_mid, "fair": fair, "price": price, "ann": ann,
+                "src": "deribit" if c.get("deribit") else "bias"}
 
     def enter(self, equity):
         if self.available() - self.a.cash_buffer * equity < 5 * (1 - self.a.max_yes):
@@ -633,9 +708,10 @@ class Engine:
             gross += cost
             placed += 1
             log(f"BID   {size:>5} NO @ {price:.3f} (fair {q['fair']:.3f}, yes {q['yes_mid']:.3f}, "
-                f"{q['days']:.1f}d, {q['ann']:+.0%}/yr, {q['category']})  {q['question'][:60]}")
+                f"{q['days']:.1f}d, {q['ann']:+.0%}/yr, {q['category']}/{q['src']})  {q['question'][:60]}")
 
     def cycle(self):
+        self.refresh_surfaces()
         self.sync_orders()
         self.settle_and_exit()
         total, halted = self.guard()
@@ -695,6 +771,10 @@ def main():
     # pricing
     ap.add_argument("--k-haircut", type=float, default=0.10, help="inflate fair YES by this for model error")
     ap.add_argument("--min-edge", type=float, default=0.01, help="min fair NO minus bid, in $")
+    ap.add_argument("--deribit-vol-bump", type=float, default=0.10,
+                    help="crypto: also price at IV x (1+bump) and use the higher YES probability")
+    ap.add_argument("--crypto-any", action="store_true",
+                    help="also trade crypto markets Deribit can't price (memecoins etc.) on the bias model")
     ap.add_argument("--reprice-min", type=float, default=30, help="cancel/requote orders older than this")
     # sizing / risk
     ap.add_argument("--kelly", type=float, default=0.25)
