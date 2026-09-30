@@ -41,6 +41,7 @@ Setup:  pip install curl_cffi            (live: also py-clob-client-v2)
 Run:    python polymarket_engine.py                    # paper, loops forever
         python polymarket_engine.py --once             # one cycle, print book
         python polymarket_engine.py --report           # PnL / positions from engine.db
+        python polymarket_engine.py --live --close <market_id|all>   # manual exit at the bid
         python polymarket_engine.py --live             # real orders (read RISK below)
 
 RISK, stated once: this sells lottery tickets. It wins small and often and
@@ -300,8 +301,9 @@ class PaperBroker:
         return 0.0
 
     def sell(self, token, shares, price):
+        """Returns shares actually sold."""
         self.s.put("paper_cash", self.s.get("paper_cash") + shares * price)
-        return True
+        return shares
 
     def settle(self, pos, payout_no):
         self.s.put("paper_cash", self.s.get("paper_cash") + pos["shares"] * payout_no)
@@ -365,11 +367,28 @@ class LiveBroker:
         matched = float(o.get("size_matched", 0) or 0)
         return max(0.0, matched - order["filled"])
 
+    def shares(self, token):
+        params = self.BalParams(asset_type=self.AssetType.CONDITIONAL, token_id=token)
+        try:
+            self.c.update_balance_allowance(params)
+        except Exception:
+            pass
+        return float(self.c.get_balance_allowance(params)["balance"]) / 1e6
+
     def sell(self, token, shares, price):
+        """FAK sell at >= price. Returns shares actually sold (partial fills happen)."""
+        before = self.shares(token)
         r = self.c.create_and_post_order(
             order_args=self.OrderArgs(token_id=token, price=price, size=shares, side=self.Side.SELL),
             order_type=self.OrderType.FAK)
-        return bool(r and r.get("success"))
+        if not (r and r.get("success")):
+            log(f"sell rejected: {r}")
+            return 0.0
+        sold = to_float(r.get("makingAmount"))
+        if not sold:  # response without fill amounts: measure the position instead
+            time.sleep(3)
+            sold = before - self.shares(token)
+        return max(0.0, min(shares, sold))
 
     def settle(self, pos, payout_no):
         # Winning shares must be redeemed on-chain (CTF redeemPositions) or via the
@@ -483,16 +502,45 @@ class Engine:
             if reason:
                 px = round(book["bid"] - 0.02, 3) if reason.startswith("STOP") else book["bid"]
                 shares = min(p["shares"], sum(s for pr, s in book["bids"] if pr >= px))
-                if shares > 0 and self.b.sell(p["token"], shares, px):
-                    left = p["shares"] - shares
-                    frac = shares / p["shares"]
-                    if left <= 1e-6:
-                        self.s.x("update positions set status='closed', exit_value=?, closed=? where token=?",
-                                 shares * px, now_utc().isoformat(), p["token"])
-                    else:
-                        self.s.x("update positions set shares=?, cost=cost*? where token=?",
-                                 left, 1 - frac, p["token"])
-                    log(f"{reason}: sold {shares:.1f} @ {px:.3f}  {p['question'][:60]}")
+                if shares > 0:
+                    self.record_sale(p, self.b.sell(p["token"], shares, px), px, reason)
+
+    def record_sale(self, p, sold, px, reason):
+        if sold <= 0:
+            log(f"{reason}: nothing sold  {p['question'][:60]}")
+            return
+        left = p["shares"] - sold
+        cost_sold = p["cost"] * sold / p["shares"]
+        if left <= 0.01:
+            self.s.x("update positions set status='closed', exit_value=?, closed=? where token=?",
+                     sold * px, now_utc().isoformat(), p["token"])
+        else:
+            self.s.x("update positions set shares=?, cost=? where token=?", left, p["cost"] - cost_sold, p["token"])
+            self.s.put("partial_pnl", self.s.get("partial_pnl", 0.0) + sold * px - cost_sold)
+        log(f"{reason}: sold {sold:.1f} @ {px:.3f}  pnl={sold * px - cost_sold:+.2f}"
+            f"{f'  ({left:.1f} left)' if left > 0.01 else ''}  {p['question'][:60]}")
+
+    def close(self, which, min_price=None):
+        """Manual exit: cancel orders and sell positions for a market id (or 'all') at the bid."""
+        for o in self.s.open_orders():
+            if which in ("all", o["market_id"]):
+                self.b.cancel(o["id"])
+                self.s.x("update orders set status='cancelled' where id=?", o["id"])
+                log(f"cancelled order {o['id'][:18]}  {o['question'][:60]}")
+        targets = [p for p in self.s.open_positions() if which in ("all", p["market_id"])]
+        if not targets:
+            log(f"no open position for '{which}' -- see --report for market ids")
+        for p in targets:
+            book = fetch_book(p["token"])
+            if not book or book["bid"] is None:
+                log(f"no bids right now, not sold  {p['question'][:60]}")
+                continue
+            px = book["bid"] if min_price is None else max(book["bid"], min_price)
+            depth = sum(s for pr, s in book["bids"] if pr >= px)
+            if depth <= 0:
+                log(f"no bids at >= {px:.3f}, not sold (best bid {book['bid']:.3f})  {p['question'][:60]}")
+                continue
+            self.record_sale(p, self.b.sell(p["token"], min(p["shares"], depth), px), px, "CLOSE")
 
     def candidates(self):
         if not self.tags:
@@ -602,7 +650,7 @@ class Engine:
 def report(store):
     closed = store.q("select * from positions where status='closed'")
     opn = store.open_positions()
-    pnl = sum(p["exit_value"] - p["cost"] for p in closed)
+    pnl = sum(p["exit_value"] - p["cost"] for p in closed) + store.get("partial_pnl", 0.0)
     wins = sum(1 for p in closed if p["exit_value"] > p["cost"])
     print(f"closed {len(closed)}  wins {wins}  realized pnl {pnl:+.2f}  "
           f"return on cost {pnl / max(sum(p['cost'] for p in closed), 1e-9):+.2%}")
@@ -616,7 +664,7 @@ def report(store):
         print(f"  {c:<10} n={n:<4} cost={cost:>9.2f}  pnl={pl:+9.2f}  ({pl / cost:+.2%})")
     print(f"\nopen positions: {len(opn)}")
     for p in opn:
-        print(f"  {p['shares']:>7.1f} NO  cost {p['cost']:>8.2f}  entry_yes {p['entry_yes']:.3f}  "
+        print(f"  market {p['market_id']:<9} {p['shares']:>7.1f} NO  cost {p['cost']:>8.2f}  entry_yes {p['entry_yes']:.3f}  "
               f"ends {p['end_date'][:10]}  {p['question'][:60]}")
     eq = store.q("select * from equity order by ts desc limit 1")
     if eq:
@@ -634,6 +682,8 @@ def main():
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--resume", action="store_true", help="clear a kill-switch halt and continue")
+    ap.add_argument("--close", metavar="MARKET_ID", help="sell this position (or 'all') at the bid and exit")
+    ap.add_argument("--close-min-price", type=float, help="with --close: don't sell below this price")
     ap.add_argument("--diagnose", action="store_true", help="live: show signer and pUSD balance per signature type")
     ap.add_argument("--tags", nargs="+", default=list(CATEGORIES))
     # universe
@@ -683,6 +733,10 @@ def main():
         store.put("peak", None)
     broker = LiveBroker(store) if args.live else PaperBroker(store, args.bankroll)
     eng = Engine(args, store, broker)
+    if args.close:
+        eng.close(args.close, args.close_min_price)
+        report(store)
+        return
     log(f"engine start: {'LIVE' if args.live else 'PAPER'}  cash {broker.balance():.2f}")
     while True:
         try:
