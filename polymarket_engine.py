@@ -22,6 +22,7 @@ What the engine does, every --poll seconds:
   3. QUOTE    post a MAKER bid on the NO token: join/improve the best NO bid,
               never above fair NO - --min-edge, never crossing the ask
               (never pays the spread; lottery buyers come to us)
+     ranked by edge per year of capital locked (short-dated first)
   4. SIZE     quarter-Kelly on the NO bet, capped per market / per event /
               per category / gross deployed, from LIVE wallet cash
   5. MANAGE   cancel+requote stale orders; exit if the thesis breaks
@@ -529,50 +530,62 @@ class Engine:
         out.sort(key=lambda c: (-c["n_children"], -c["vol"]))
         return out
 
+    def quote(self, c):
+        """Maker NO bid for a candidate from live books, or None if no edge."""
+        yb, nb = fetch_book(c["yes_tok"]), fetch_book(c["no_tok"])
+        if not (yb and nb and yb["bid"] is not None and yb["ask"] is not None and nb["ask"] is not None):
+            return None
+        yes_mid = (yb["bid"] + yb["ask"]) / 2
+        if not (self.a.min_yes <= yes_mid < self.a.max_yes):
+            return None
+        fair = self.fair_no(yes_mid, c["k"])
+        tick = c["tick"]
+        best_bid = nb["bid"] or 0.0
+        price = min(round_down(fair - self.a.min_edge, tick), round(nb["ask"] - tick, 6),
+                    round(best_bid + tick, 6))
+        if price <= 0 or price < best_bid or fair - price < self.a.min_edge:
+            return None
+        # capital is locked until resolution: rank by expected return per year locked
+        ann = (fair - price) / price * 365 / max(c["days"], 0.5)
+        return {**c, "yes_mid": yes_mid, "fair": fair, "price": price, "ann": ann}
+
     def enter(self, equity):
+        if self.available() - self.a.cash_buffer * equity < 5 * (1 - self.a.max_yes):
+            return  # not enough free cash for even a minimum order; skip the book scan
         by_mkt, by_evt, by_cat, gross = self.exposure()
         held = {p["market_id"] for p in self.s.open_positions()} | {o["market_id"] for o in self.s.open_orders()}
+        pool = sorted((c for c in self.candidates() if c["market_id"] not in held), key=lambda c: c["days"])
+        quotes = [q for q in map(self.quote, pool[:self.a.max_quotes]) if q]
+        quotes.sort(key=lambda q: -q["ann"])
         placed = 0
-        for c in self.candidates():
-            if placed >= self.a.max_new or c["market_id"] in held:
-                continue
-            yb, nb = fetch_book(c["yes_tok"]), fetch_book(c["no_tok"])
-            if not (yb and nb and yb["bid"] is not None and yb["ask"] is not None and nb["ask"] is not None):
-                continue
-            yes_mid = (yb["bid"] + yb["ask"]) / 2
-            if not (self.a.min_yes <= yes_mid < self.a.max_yes):
-                continue
-            fair = self.fair_no(yes_mid, c["k"])
-            tick = c["tick"]
-            best_bid = nb["bid"] or 0.0
-            price = min(round_down(fair - self.a.min_edge, tick), round(nb["ask"] - tick, 6),
-                        round(best_bid + tick, 6))
-            if price <= 0 or price < best_bid or fair - price < self.a.min_edge:
-                continue
-            f = self.kelly_frac(fair, price)
+        for q in quotes:
+            if placed >= self.a.max_new:
+                break
+            price = q["price"]
+            f = self.kelly_frac(q["fair"], price)
             budget = min(f * equity,
-                         self.a.cap_market * equity - by_mkt.get(c["market_id"], 0),
-                         self.a.cap_event * equity - by_evt.get(c["event_id"], 0),
-                         self.a.cap_category * equity - by_cat.get(c["category"], 0),
+                         self.a.cap_market * equity - by_mkt.get(q["market_id"], 0),
+                         self.a.cap_event * equity - by_evt.get(q["event_id"], 0),
+                         self.a.cap_category * equity - by_cat.get(q["category"], 0),
                          self.a.cap_gross * equity - gross,
                          self.available() - self.a.cash_buffer * equity)
             size = math.floor(budget / price)
-            if size < c["min_size"]:
+            if size < q["min_size"]:
                 continue
-            oid = self.b.place_bid(c["no_tok"], price, size)
+            oid = self.b.place_bid(q["no_tok"], price, size)
             if not oid:
                 continue
-            self.s.x("insert into orders values(?,?,?,?,?,?,?,?,?,0,'open',?,?,?)", oid, c["no_tok"],
-                     c["market_id"], c["event_id"], c["category"], c["question"], "BUY_NO", price, size,
-                     now_utc().isoformat(), yes_mid, c["end"])
+            self.s.x("insert into orders values(?,?,?,?,?,?,?,?,?,0,'open',?,?,?)", oid, q["no_tok"],
+                     q["market_id"], q["event_id"], q["category"], q["question"], "BUY_NO", price, size,
+                     now_utc().isoformat(), q["yes_mid"], q["end"])
             cost = price * size
-            by_mkt[c["market_id"]] = by_mkt.get(c["market_id"], 0) + cost
-            by_evt[c["event_id"]] = by_evt.get(c["event_id"], 0) + cost
-            by_cat[c["category"]] = by_cat.get(c["category"], 0) + cost
+            by_mkt[q["market_id"]] = by_mkt.get(q["market_id"], 0) + cost
+            by_evt[q["event_id"]] = by_evt.get(q["event_id"], 0) + cost
+            by_cat[q["category"]] = by_cat.get(q["category"], 0) + cost
             gross += cost
             placed += 1
-            log(f"BID   {size:>5} NO @ {price:.3f} (fair {fair:.3f}, yes {yes_mid:.3f}, {c['days']:.0f}d, "
-                f"{c['category']}, {c['n_children']} legs)  {c['question'][:60]}")
+            log(f"BID   {size:>5} NO @ {price:.3f} (fair {q['fair']:.3f}, yes {q['yes_mid']:.3f}, "
+                f"{q['days']:.1f}d, {q['ann']:+.0%}/yr, {q['category']})  {q['question'][:60]}")
 
     def cycle(self):
         self.sync_orders()
@@ -641,6 +654,8 @@ def main():
     ap.add_argument("--cap-gross", type=float, default=0.75)
     ap.add_argument("--cash-buffer", type=float, default=0.10)
     ap.add_argument("--max-new", type=int, default=10, help="max new orders per cycle")
+    ap.add_argument("--max-quotes", type=int, default=150,
+                    help="soonest-ending candidates to price each cycle (then ranked by edge per year)")
     ap.add_argument("--stop-mult", type=float, default=3.0)
     ap.add_argument("--stop-yes", type=float, default=0.35)
     ap.add_argument("--recycle-at", type=float, default=0.99, help="sell NO at/above this bid (0=off)")
