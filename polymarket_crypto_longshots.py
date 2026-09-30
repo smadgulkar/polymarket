@@ -208,6 +208,9 @@ class Surface:
 
 # ----------------------------------------------------------------- polymarket parsing
 PRICE = r"\$\s?([\d,]+(?:\.\d+)?)\s?([kKmMbB](?![a-zA-Z]))?"
+# "Bitcoin above 85,600 on ..." -- no $ sign: take the number right after a price keyword
+BARE_PRICE = (r"\b(?:above|below|over|under|reach|hit|touch|to|between|and|than)\s+"
+              r"(\d[\d,]*(?:\.\d+)?)\s?([kKmM](?![a-zA-Z]))?")
 
 
 def to_price(num, suf):
@@ -222,6 +225,8 @@ def parse_question(q):
     if not asset or re.search(r"up or down|market cap|etf|dominance|flip|all[- ]time high|ath\b", ql):
         return None
     prices = [to_price(n, s) for n, s in re.findall(PRICE, q)]
+    if not prices:
+        prices = [to_price(n, s) for n, s in re.findall(BARE_PRICE, q, re.I)]
     if not prices:
         return None
     if re.search(r"\bbetween\b", ql) and len(prices) >= 2:
@@ -261,24 +266,42 @@ def conservative(surf, p, t, haircut):
 
 
 # ----------------------------------------------------------------- market data
-def crypto_markets(max_days):
+def crypto_markets(max_days, page_size=100, offset_cap=1000, max_total=30000):
+    """All open crypto markets ending within max_days. Gamma stops paging at an
+    offset cap, and thousands of 5-minute up/down markets fill the first pages,
+    so walk forward by restarting from the latest endDate seen."""
     tag = get_json(f"{GAMMA}/tags/slug/crypto")
     if not isinstance(tag, dict):
         sys.exit("could not reach Polymarket (gamma-api) -- network or geoblock")
-    end_min = now_utc().strftime("%Y-%m-%dT%H:%M:%SZ")
-    end_max = (now_utc() + timedelta(days=max_days)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    out = []
-    for page in range(30):
-        batch = get_json(f"{GAMMA}/markets", {"closed": "false", "active": "true", "limit": 100,
-                                              "offset": page * 100, "tag_id": tag["id"],
-                                              "end_date_min": end_min, "end_date_max": end_max,
-                                              "order": "endDate", "ascending": "true"})
-        if not isinstance(batch, list) or not batch:
-            break
-        out.extend(batch)
-        if len(batch) < 100:
-            break
-        time.sleep(0.1)
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
+    end_min = now_utc().strftime(fmt)
+    end_max = (now_utc() + timedelta(days=max_days)).strftime(fmt)
+    out, seen = [], set()
+    while len(out) < max_total:
+        batch, offset = [], 0
+        while offset < offset_cap:
+            batch = get_json(f"{GAMMA}/markets", {"closed": "false", "active": "true", "limit": page_size,
+                                                  "offset": offset, "tag_id": tag["id"],
+                                                  "end_date_min": end_min, "end_date_max": end_max,
+                                                  "order": "endDate", "ascending": "true"})
+            if not isinstance(batch, list) or not batch:
+                return out
+            for m in batch:
+                if m.get("id") not in seen:
+                    seen.add(m.get("id"))
+                    out.append(m)
+            if len(batch) < page_size:
+                return out
+            offset += page_size
+            time.sleep(0.1)
+        ends = [parse_iso(m.get("endDate")) for m in batch]
+        latest = max((e for e in ends if e), default=None)
+        if latest is None:
+            return out
+        nxt = latest.strftime(fmt)
+        if nxt <= end_min:  # >offset_cap markets share one endDate: step past it
+            nxt = (latest + timedelta(seconds=1)).strftime(fmt)
+        end_min = nxt
     return out
 
 
