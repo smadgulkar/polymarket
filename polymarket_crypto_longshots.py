@@ -303,7 +303,7 @@ def scan(args):
     print("deribit: " + ", ".join(f"{a} {s.spot:,.2f} ({len(s.expiries)} expiries)" for a, s in surfaces.items()))
     mkts = crypto_markets(args.max_days)
     print(f"polymarket: {len(mkts)} open crypto markets ending within {args.max_days}d")
-    rows, unparsed = [], []
+    rows, unparsed, near, kinds, updown = [], [], [], {}, 0
     for m in mkts:
         q = m.get("question") or ""
         p = parse_question(q)
@@ -311,8 +311,12 @@ def scan(args):
         outs, toks = parse_list(m.get("outcomes")), parse_list(m.get("clobTokenIds"))
         if not (p and end and outs and toks and len(toks) == 2) or p["asset"] not in surfaces:
             if not p:
-                unparsed.append(q)
+                if re.search(r"up or down", q, re.I):
+                    updown += 1
+                else:
+                    unparsed.append(q)
             continue
+        kinds[p["kind"]] = kinds.get(p["kind"], 0) + 1
         vol = float(m.get("volumeNum") or m.get("volume") or 0)
         if vol < args.min_volume:
             continue
@@ -329,14 +333,22 @@ def scan(args):
                 continue
             ratio = pc / ask
             sig = ratio >= args.min_ratio and pc - ask >= args.min_edge
-            if sig or args.all:
-                rows.append({"ts": now_utc().isoformat(timespec="seconds"), "market_id": m["id"],
+            row = {"ts": now_utc().isoformat(timespec="seconds"), "market_id": m["id"],
                              "question": q, "side": side, "token": tok, "asset": p["asset"],
                              "kind": p["kind"], "k1": p["k1"], "k2": p["k2"] or "",
                              "spot": round(surf.spot, 4), "days": round(t * 365, 2), "ask": ask,
                              "depth_usd": depth, "p_model": round(pm, 4), "p_conservative": round(pc, 4),
-                             "ratio": round(ratio, 2), "payout_x": round(1 / ask, 1), "signal": int(sig)})
+                             "ratio": round(ratio, 2), "payout_x": round(1 / ask, 1), "signal": int(sig)}
+            near.append(row)
+            if sig or args.all:
+                rows.append(row)
         time.sleep(0.05)
+    print(f"parsed: {sum(kinds.values())} ({', '.join(f'{k} {n}' for k, n in sorted(kinds.items()))}); "
+          f"skipped {updown} up/down, {len(unparsed)} other unparsed; "
+          f"{len(near)} contracts priced <= {args.max_price} with depth")
+    if not rows:  # show the closest misses so a quiet scan is still informative
+        rows = sorted(near, key=lambda r: -r["ratio"])[:15]
+        print("no signals -- closest 15 by ratio:")
     rows.sort(key=lambda r: -r["ratio"])
     print(f"\n{'side':<4} {'ask':>6} {'p_cons':>7} {'p_mid':>6} {'ratio':>6} {'pays':>6} {'depth$':>7} {'days':>6}  question")
     for r in rows:
