@@ -59,6 +59,7 @@ import argparse
 import json
 import math
 import os
+import signal
 import sqlite3
 import sys
 import time
@@ -73,6 +74,7 @@ except ImportError:
 
 GAMMA = "https://gamma-api.polymarket.com"
 CLOB = "https://clob.polymarket.com"
+DATA = "https://data-api.polymarket.com"
 SESSION = requests.Session(impersonate="chrome")
 
 # tag slug -> (category, k = realized/price for longshots). k from arXiv
@@ -329,6 +331,9 @@ class PaperBroker:
     def settle(self, pos, payout_no):
         self.s.put("paper_cash", self.s.get("paper_cash") + pos["shares"] * payout_no)
 
+    def exchange_positions(self):
+        return None  # paper state lives only in the db
+
 
 class LiveBroker:
     """Real orders through Polymarket CLOB V2 (py-clob-client-v2; V1 stopped
@@ -387,6 +392,14 @@ class LiveBroker:
         o = self.c.get_order(order["id"]) or {}
         matched = float(o.get("size_matched", 0) or 0)
         return max(0.0, matched - order["filled"])
+
+    def exchange_positions(self):
+        """{token: position} as Polymarket sees the funder wallet, or None if unavailable."""
+        funder = os.environ.get("POLY_FUNDER")
+        rows = get_json(f"{DATA}/positions", params={"user": funder, "limit": 500}) if funder else None
+        if not isinstance(rows, list):
+            return None
+        return {str(r["asset"]): r for r in rows if r.get("asset")}
 
     def shares(self, token):
         params = self.BalParams(asset_type=self.AssetType.CONDITIONAL, token_id=token)
@@ -493,7 +506,7 @@ class Engine:
         cash, pv = self.equity()
         total = cash + pv
         self.s.x("insert into equity values(?,?,?,?)", now_utc().isoformat(), cash, pv, total)
-        peak = max(self.s.get("peak", total), total)
+        peak = max(self.s.get("peak") or total, total)
         self.s.put("peak", peak)
         day = now_utc().strftime("%Y-%m-%d")
         if self.s.get("day") != day:
@@ -510,6 +523,41 @@ class Engine:
             self.s.put("halted", halted)
             self.cancel_all()
         return total, bool(halted)
+
+    def reconcile(self):
+        """Make the db match the exchange: adopt positions filled while the engine was
+        stopped (or fills it missed) and correct drifted share counts."""
+        held = self.b.exchange_positions()
+        if held is None:
+            return
+        db = {p["token"]: p for p in self.s.open_positions()}
+        for tok, x in held.items():
+            size = to_float(x.get("size")) or 0.0
+            avg = to_float(x.get("avgPrice")) or 0.0
+            if size < 0.01 or x.get("redeemable"):
+                continue
+            p = db.get(tok)
+            if p:
+                if abs(p["shares"] - size) >= 0.01:
+                    log(f"RECONCILE shares {p['shares']:.2f} -> {size:.2f}  {p['question'][:60]}")
+                    self.s.x("update positions set shares=?, cost=? where token=?", size, size * avg, tok)
+                continue
+            o = self.s.q("select * from orders where token=? order by created desc limit 1", tok)
+            if o:
+                o = o[0]
+                meta = (o["market_id"], o["event_id"], o["category"], o["question"], o["yes_mid"], o["end_date"])
+                self.s.x("update orders set status='filled', filled=size where id=?", o["id"])
+            elif str(x.get("outcome", "")).lower() == "no":
+                m = get_json(f"{GAMMA}/markets", params={"clob_token_ids": tok})
+                m = m[0] if isinstance(m, list) and m else {}
+                meta = (str(m.get("id", x.get("conditionId"))), str(x.get("eventId") or m.get("id")), "manual",
+                        x.get("title") or m.get("question") or "", 1 - avg, x.get("endDate") or m.get("endDate") or "")
+            else:
+                continue  # a YES bought by hand: not the engine's to manage
+            self.s.x("insert or replace into positions(token,market_id,event_id,category,question,shares,"
+                     "cost,entry_yes,end_date,opened,status) values(?,?,?,?,?,?,?,?,?,?,'open')",
+                     tok, *meta[:4], size, size * avg, meta[4], meta[5], now_utc().isoformat())
+            log(f"ADOPT {size:.1f} NO @ {avg:.3f} found on exchange  {meta[3][:60]}")
 
     def cancel_all(self):
         for o in self.s.open_orders():
@@ -713,6 +761,7 @@ class Engine:
     def cycle(self):
         self.refresh_surfaces()
         self.sync_orders()
+        self.reconcile()
         self.settle_and_exit()
         total, halted = self.guard()
         if not halted:
@@ -795,6 +844,11 @@ def main():
 
     load_env(args.env_file)
     store = Store(args.db or ("engine_live.db" if args.live else "engine_paper.db"))
+    if args.resume:
+        store.put("halted", None)
+        store.put("peak", None)
+        store.put("day", None)
+        print("kill switch cleared")
     if args.report:
         report(store)
         return
@@ -808,9 +862,6 @@ def main():
         print(f"funder (POLY_FUNDER): {os.environ.get('POLY_FUNDER')}")
         print("Set POLY_SIGNATURE_TYPE in .env to the type that shows your balance.")
         return
-    if args.resume:
-        store.put("halted", None)
-        store.put("peak", None)
     broker = LiveBroker(store) if args.live else PaperBroker(store, args.bankroll)
     eng = Engine(args, store, broker)
     if args.close:
@@ -818,16 +869,21 @@ def main():
         report(store)
         return
     log(f"engine start: {'LIVE' if args.live else 'PAPER'}  cash {broker.balance():.2f}")
-    while True:
-        try:
-            eng.cycle()
-        except KeyboardInterrupt:
-            raise
-        except Exception as e:  # keep running through transient API failures
-            log(f"cycle error: {type(e).__name__}: {e}")
-        if args.once:
-            break
-        time.sleep(args.poll)
+    if not args.once:  # `systemctl stop` sends SIGTERM: leave no orders resting unattended
+        signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    try:
+        while True:
+            try:
+                eng.cycle()
+            except Exception as e:  # keep running through transient API failures
+                log(f"cycle error: {type(e).__name__}: {e}")
+            if args.once:
+                break
+            time.sleep(args.poll)
+    finally:
+        if not args.once and store.open_orders():
+            log(f"shutdown: cancelling {len(store.open_orders())} open order(s)")
+            eng.cancel_all()
 
 
 if __name__ == "__main__":
