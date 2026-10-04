@@ -611,18 +611,33 @@ class Engine:
                     f"  {p['question'][:70]}")
                 continue
             book = fetch_book(p["token"])
-            if not book or book["bid"] is None:
-                continue
-            self.s.put(f"mark:{p['token']}", book["bid"])
-            yes_mid_now = 1.0 - ((book["bid"] + (book["ask"] or book["bid"])) / 2)
+            # Value and stop on something a thin book can't fake: quiet hours often leave
+            # a one-sided book with a stray 1c bid, which once valued a near-certain
+            # winner at ~0 and tripped the kill switch.
+            two_sided = bool(book and book["bid"] is not None and book["ask"] is not None
+                             and book["ask"] - book["bid"] <= self.a.max_mark_spread)
+            parsed = self.crypto_parse(p["question"]) if p["category"] == "crypto" else None
+            days = ((parse_iso(p["end_date"]) or now_utc()) - now_utc()).total_seconds() / 86400
+            fair = self.deribit_fair_no(parsed, days) if parsed else None
+            if fair is not None:
+                no_value = fair
+            elif two_sided:
+                no_value = (book["bid"] + book["ask"]) / 2
+            else:
+                continue  # no trustworthy price this cycle: keep the last mark, don't trade
+            self.s.put(f"mark:{p['token']}", no_value)
+            yes_now = 1.0 - no_value
             stop_at = max(self.a.stop_mult * (p["entry_yes"] or 0), self.a.stop_yes)
             reason = None
-            if yes_mid_now >= stop_at:
-                reason = f"STOP yes_mid {yes_mid_now:.3f} >= {stop_at:.3f}"
-            elif self.a.recycle_at and book["bid"] >= self.a.recycle_at:
+            if yes_now >= stop_at:
+                reason = f"STOP yes {yes_now:.3f} >= {stop_at:.3f}"
+            elif self.a.recycle_at and two_sided and book["bid"] >= self.a.recycle_at:
                 reason = f"RECYCLE bid {book['bid']:.3f}"
             if reason:
-                px = round(book["bid"] - 0.02, 3) if reason.startswith("STOP") else book["bid"]
+                if not two_sided:
+                    log(f"{reason} but the book is too thin to sell into; holding  {p['question'][:60]}")
+                    continue
+                px = max(round(book["bid"] - 0.02, 3), 0.01) if reason.startswith("STOP") else book["bid"]
                 shares = min(p["shares"], sum(s for pr, s in book["bids"] if pr >= px))
                 if shares > 0:
                     self.record_sale(p, self.b.sell(p["token"], shares, px), px, reason)
@@ -845,6 +860,8 @@ def main():
     ap.add_argument("--max-new", type=int, default=10, help="max new orders per cycle")
     ap.add_argument("--max-quotes", type=int, default=150,
                     help="soonest-ending candidates to price each cycle (then ranked by edge per year)")
+    ap.add_argument("--max-mark-spread", type=float, default=0.10,
+                    help="value/stop on the book mid only if its spread is at most this")
     ap.add_argument("--stop-mult", type=float, default=3.0)
     ap.add_argument("--stop-yes", type=float, default=0.35)
     ap.add_argument("--recycle-at", type=float, default=0.99, help="sell NO at/above this bid (0=off)")
