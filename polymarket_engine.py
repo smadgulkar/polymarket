@@ -514,10 +514,20 @@ class Engine:
             self.s.put("day_start", total)
         day_start = self.s.get("day_start", total)
         halted = self.s.get("halted")
-        if not halted and total < day_start * (1 - self.a.daily_stop):
-            halted = f"daily loss {total / day_start - 1:+.1%} on {day}"
-        if not halted and total < peak * (1 - self.a.max_dd):
-            halted = f"drawdown {total / peak - 1:+.1%} from peak {peak:.2f}"
+        breach = None
+        if total < day_start * (1 - self.a.daily_stop):
+            breach = f"daily loss {total / day_start - 1:+.1%} on {day}"
+        elif total < peak * (1 - self.a.max_dd):
+            breach = f"drawdown {total / peak - 1:+.1%} from peak {peak:.2f}"
+        # A fill debits cash before the positions feed shows the shares, so one bad
+        # reading is usually accounting lag. Halt only if it persists a second cycle.
+        strikes = self.s.get("breach_strikes", 0) + 1 if breach else 0
+        self.s.put("breach_strikes", strikes)
+        if breach and not halted:
+            if strikes >= 2:
+                halted = breach
+            else:
+                log(f"loss check tripped once ({breach}); rechecking next cycle before halting")
         if halted and not self.s.get("halted"):
             log(f"KILL SWITCH: {halted} -- cancelling all orders, no new entries")
             self.s.put("halted", halted)
@@ -848,6 +858,7 @@ def main():
         store.put("halted", None)
         store.put("peak", None)
         store.put("day", None)
+        store.put("breach_strikes", 0)
         print("kill switch cleared")
     if args.report:
         report(store)
