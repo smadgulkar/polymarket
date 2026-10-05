@@ -133,16 +133,20 @@ class RPC:
                     retry += idx
                     continue
                 self.n += len(body)
-                if any(not isinstance(x, dict) or x.get("id") not in range(len(idx)) for x in res):
-                    # provider answered the batch with errors not tied to a request: shrink and retry
-                    msg = next((str(x.get("error"))[:150] for x in res if isinstance(x, dict) and x.get("error")), "")
+                # match responses to requests by id (as text: some providers echo ids as strings),
+                # falling back to order when every response lacks an id
+                by_id = {str(x.get("id")): x for x in res if isinstance(x, dict) and x.get("id") is not None}
+                if len(by_id) == len(idx) and all(str(j) in by_id for j in range(len(idx))):
+                    matched = [(idx[j], by_id[str(j)]) for j in range(len(idx))]
+                elif not by_id and len(res) == len(idx) and all(isinstance(x, dict) for x in res):
+                    matched = list(zip(idx, res))
+                else:
                     if self.chunk > 1:
                         self.chunk = max(1, self.chunk // 2)
-                    print(f"  rpc batch error ({msg}); retrying with batches of {self.chunk}")
+                    print(f"  rpc batch error, raw response: {str(res)[:300]}; retrying with batches of {self.chunk}")
                     retry += idx
                     continue
-                for x in res:
-                    k = idx[x["id"]]
+                for k, x in matched:
                     err = x.get("error") or {}
                     if "result" in x:
                         out[k] = x["result"]
