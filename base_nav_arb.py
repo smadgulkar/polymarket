@@ -59,6 +59,7 @@ SESSION = requests.Session(impersonate="chrome")
 GECKO = "https://api.geckoterminal.com/api/v2/networks/base"
 LLAMA = "https://coins.llama.fi/prices/current"
 POOL_CACHE = "base_pools_cache.json"
+VAULT_CACHE = "base_vault_pools_cache.json"
 OUT = "base_nav_episodes.csv"
 BLOCK_SECONDS = 2.0
 V2_FEE = {"uniswap-v2-base": 0.003, "sushiswap-v2-base": 0.003, "pancakeswap-v2-base": 0.0025}
@@ -243,19 +244,29 @@ def discover(rpc, args):
     vaults = {a: "0x" + r[-40:] for a, r in zip(emitters, res) if r and len(r) == 66 and 0 < int(r, 16) < 2 ** 160}
     print(f"  {len(emitters)} Deposit emitters over {args.discover_hours}h, {len(vaults)} answer asset(); "
           f"looking up DEX pools for up to {args.max_vaults}")
-    pools = {}
-    for i, v in enumerate(list(vaults)[:args.max_vaults]):
+    # per-vault lookups are slow (GeckoTerminal ~30 req/min): checkpoint them so an
+    # interrupted run resumes instead of starting over
+    seen = json.load(open(VAULT_CACHE, encoding="utf-8")) if os.path.exists(VAULT_CACHE) else {}
+    todo = [v for v in list(vaults)[:args.max_vaults] if v not in seen]
+    if seen:
+        print(f"  resuming: {len(seen)} vaults already looked up, {len(todo)} to go")
+    for i, v in enumerate(todo):
         d = get_json(f"{GECKO}/tokens/{v}/pools", {"page": 1})
+        found = {}
         for p in (d or {}).get("data") or []:
             a, rel = p["attributes"], p["relationships"]
-            pools[a["address"].lower()] = {
+            found[a["address"].lower()] = {
                 "dex": rel.get("dex", {}).get("data", {}).get("id", "?"), "name": a["name"],
                 "tvl": float(a.get("reserve_in_usd") or 0),
                 "ta": rel["base_token"]["data"]["id"].split("_", 1)[1].lower(),
                 "tb": rel["quote_token"]["data"]["id"].split("_", 1)[1].lower()}
+        if d is not None:  # don't checkpoint a failed lookup as "no pools"
+            seen[v] = found
         time.sleep(2.2)  # GeckoTerminal free tier: ~30 req/min
-        if (i + 1) % 25 == 0:
-            print(f"  {i + 1} vaults checked, {len(pools)} pools found")
+        if (i + 1) % 25 == 0 or i + 1 == len(todo):
+            json.dump(seen, open(VAULT_CACHE, "w", encoding="utf-8"))
+            print(f"  {len(seen)} vaults checked, {sum(len(x) for x in seen.values())} pools found")
+    pools = {a: p for found in seen.values() for a, p in found.items()}
     meta = classify(rpc, pools)
     paired = {c["share"] for c in meta}
     other = len(({p["ta"] for p in pools.values()} | {p["tb"] for p in pools.values()}) & set(vaults) - paired)
