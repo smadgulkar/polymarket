@@ -299,28 +299,43 @@ def classify(rpc, pools):
 
 def enrich(rpc, cands):
     """Token decimals/symbols, pool type, token order, static fee."""
-    out = []
+    out, dropped = [], {}
     for c in cands:
-        q = [(c["share"], SEL["decimals"]), (c["asset"], SEL["decimals"]), (c["share"], SEL["symbol"]),
-             (c["asset"], SEL["symbol"]), (c["pool"], SEL["token0"]), (c["pool"], SEL["slot0"]),
-             (c["pool"], SEL["liquidity"]), (c["pool"], SEL["fee"]), (c["pool"], SEL["stable"]),
-             (c["pool"], SEL["getReserves"])]
-        r = rpc.calls([(t, d, "latest") for t, d in q])
-        if not (r[0] and r[1] and r[4]):
-            continue
-        c["share_dec"], c["asset_dec"] = words(r[0])[0], words(r[1])[0]
-        c["share_sym"], c["asset_sym"] = decode_str(r[2]), decode_str(r[3])
-        c["share_is_t0"] = ("0x" + r[4][-40:]).lower() == c["share"]
-        if c["dex"] == "aerodrome-base" and r[8]:
-            c["kind"], c["fee"] = "solidly", None  # fee comes out of getAmountOut
-        elif r[5] and r[6] and len(words(r[5])) >= 2:
-            c["kind"], c["fee"] = "v3", (words(r[7])[0] / 1e6 if r[7] else 0.003)
-        elif r[9] and c["dex"] in V2_FEE:
-            c["kind"], c["fee"] = "v2", V2_FEE[c["dex"]]
-        else:
-            continue
-        out.append(c)
+        n_before = len(out)
+        _enrich_one(rpc, c, out)
+        if len(out) == n_before:
+            d = dropped.setdefault(c["dex"], [0, 0.0, []])
+            d[0] += 1
+            d[1] += c["tvl"]
+            d[2].append(c)
+    if dropped:
+        print("  share/asset pools skipped (pool type not readable yet), by DEX:")
+        for dex, (n, tvl, cs) in sorted(dropped.items(), key=lambda kv: -kv[1][1]):
+            top = max(cs, key=lambda c: c["tvl"])
+            print(f"    {dex:<26} {n:>4} pools  ${tvl:>12,.0f} total  largest: {top['name'][:32]} ${top['tvl']:,.0f}")
     return out
+
+
+def _enrich_one(rpc, c, out):
+    q = [(c["share"], SEL["decimals"]), (c["asset"], SEL["decimals"]), (c["share"], SEL["symbol"]),
+         (c["asset"], SEL["symbol"]), (c["pool"], SEL["token0"]), (c["pool"], SEL["slot0"]),
+         (c["pool"], SEL["liquidity"]), (c["pool"], SEL["fee"]), (c["pool"], SEL["stable"]),
+         (c["pool"], SEL["getReserves"])]
+    r = rpc.calls([(t, d, "latest") for t, d in q])
+    if not (r[0] and r[1] and r[4]):
+        return
+    c["share_dec"], c["asset_dec"] = words(r[0])[0], words(r[1])[0]
+    c["share_sym"], c["asset_sym"] = decode_str(r[2]), decode_str(r[3])
+    c["share_is_t0"] = ("0x" + r[4][-40:]).lower() == c["share"]
+    if c["dex"] == "aerodrome-base" and r[8]:
+        c["kind"], c["fee"] = "solidly", None  # fee comes out of getAmountOut
+    elif r[5] and r[6] and len(words(r[5])) >= 2:
+        c["kind"], c["fee"] = "v3", (words(r[7])[0] / 1e6 if r[7] else 0.003)
+    elif r[9] and c["dex"] in V2_FEE:
+        c["kind"], c["fee"] = "v2", V2_FEE[c["dex"]]
+    else:
+        return
+    out.append(c)
 
 
 # ----------------------------------------------------------------- evaluation
@@ -596,7 +611,8 @@ def main():
             lad = ladder(c, px[c["asset"]]) if c["kind"] == "solidly" else None
             ev = evaluate(c, rpc.calls(state_calls(c, head, lad)), px[c["asset"]], args, lad)
             if not ev:
-                print(f"  {c['share_sym']:>14}/{c['asset_sym']:<8} no data (vault call reverted?)")
+                print(f"  {c['share_sym']:>14}/{c['asset_sym']:<8} not tradable now: zero active liquidity at the "
+                      f"pool price (one-sided pool?) or a vault/pool call failed")
                 continue
             nav, dpx = ev[0][3], ev[0][4]
             gaps = "  ".join(f"{d}: ${p:+,.2f} @ ${s:,.0f}" for d, p, s, *_ in ev)
