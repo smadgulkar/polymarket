@@ -44,3 +44,5 @@ Thumbs.db
 jev_market_text.json
 jev_tags.json
 crypto_longshots_log.csv
+base_pools_cache.json
+base_nav_episodes.csv
