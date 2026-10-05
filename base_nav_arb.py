@@ -106,9 +106,36 @@ def decode_str(hexstr):
         return "?"
 
 
+# Free-plan throughput and per-method costs, from each provider's published docs:
+#   Infura  500 credits/s, 3M credits/day; eth_call/eth_blockNumber/getTx 80, eth_getLogs 255
+#   Alchemy 300 CU/s, 30M CU/month;       eth_call 26, eth_getLogs 60
+PROVIDERS = {
+    "infura.io": {"per_s": 500, "default": 80, "cost": {"eth_getLogs": 255}, "budget": (3_000_000, "day")},
+    "alchemy.com": {"per_s": 300, "default": 26, "cost": {"eth_getLogs": 60}, "budget": (30_000_000, "month")},
+}
+
+
 class RPC:
-    def __init__(self, url, chunk=50):
-        self.url, self.chunk, self.n = url, chunk, 0
+    def __init__(self, url, chunk=50, per_s=None):
+        self.url, self.chunk, self.n, self.spent = url, chunk, 0, 0
+        self.plan = next((p for host, p in PROVIDERS.items() if host in url), None)
+        self.per_s = per_s or (self.plan["per_s"] if self.plan else None)
+
+    def cost(self, method):
+        return self.plan["cost"].get(method, self.plan["default"]) if self.plan else 1
+
+    def pace(self, idx_reqs):
+        """Trim a chunk to fit one second of throughput, and wait long enough after sending it."""
+        if not self.per_s:
+            return idx_reqs, 0.0
+        budget = 0.9 * self.per_s
+        out, spent = [], 0
+        for k, m in idx_reqs:
+            if out and spent + self.cost(m) > budget:
+                break
+            out.append((k, m))
+            spent += self.cost(m)
+        return out, spent / budget
 
     def batch(self, reqs):
         """reqs: list of (method, params). Returns list of result-or-None, same order.
@@ -117,15 +144,22 @@ class RPC:
         todo = list(range(len(reqs)))
         for attempt in range(8):
             retry = []
-            for i in range(0, len(todo), self.chunk):
-                idx = todo[i:i + self.chunk]
+            i = 0
+            while i < len(todo):
+                fit, wait = self.pace([(k, reqs[k][0]) for k in todo[i:i + self.chunk]])
+                idx = [k for k, _ in fit]
+                i += len(idx)
                 body = [{"jsonrpc": "2.0", "id": j, "method": reqs[k][0], "params": reqs[k][1]}
                         for j, k in enumerate(idx)]
                 try:
                     r = SESSION.post(self.url, json=body, timeout=60)
-                    res = r.json() if r.status_code != 429 else None
-                except Exception:
+                    res = r.json() if r.status_code not in (402, 429) else None
+                    if r.status_code == 402:
+                        sys.exit("RPC provider: plan credit limit reached (HTTP 402). Wait for the reset "
+                                 "or use another provider via --rpc.")
+                except Exception:  # network error or non-JSON body: retry
                     res = None
+                time.sleep(wait)
                 if not isinstance(res, list):
                     if isinstance(res, dict) and attempt == 0:
                         print(f"  rpc batch of {len(body)} rejected: {str(res.get('error'))[:100]}"
@@ -133,6 +167,7 @@ class RPC:
                     retry += idx
                     continue
                 self.n += len(body)
+                self.spent += sum(self.cost(reqs[k][0]) for k in idx)
                 # match responses to requests by id (as text: some providers echo ids as strings),
                 # falling back to order when every response lacks an id
                 by_id = {str(x.get("id")): x for x in res if isinstance(x, dict) and x.get("id") is not None}
@@ -453,6 +488,25 @@ def replay(rpc, cands, px, args):
     return blocks, series, lads
 
 
+def budget_ok(rpc, cands, px, args):
+    """Estimate the replay's cost against the provider's free-plan budget before spending it."""
+    samples = int(args.hours * 3600 / BLOCK_SECONDS / args.step) + 1
+    per_sample = sum(len(state_calls(c, 0, ladder(c, px[c["asset"]]) if c["kind"] == "solidly" else None))
+                     for c in cands)
+    calls = samples * per_sample
+    credits = calls * rpc.cost("eth_call")
+    secs = credits / (0.9 * rpc.per_s) if rpc.per_s else 0
+    print(f"replay estimate: {calls:,} calls, {credits:,} credits, ~{secs / 60:.0f} min at the paced rate "
+          f"(+ episode refinement)")
+    if rpc.plan:
+        cap, period = rpc.plan["budget"]
+        if credits > 0.8 * cap and not args.force:
+            print(f"  that is {credits / cap:.0%} of the free plan's {cap:,}/{period}. Shrink it with fewer "
+                  f"--hours or a larger --step (or pass --force).")
+            return False
+    return True
+
+
 def episodes(rpc, cands, blocks, series, px, lads, args):
     by_pool = {c["pool"]: c for c in cands}
     eps = []
@@ -488,6 +542,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--rpc", help="Base RPC URL (default: Alchemy from ALCHEMY_KEY in .env)")
     ap.add_argument("--rpc-batch", type=int, default=50, help="JSON-RPC calls per HTTP batch")
+    ap.add_argument("--rpc-per-s", type=float,
+                    help="credits/CU per second to pace to (default: provider's free-plan limit)")
+    ap.add_argument("--force", action="store_true", help="run even if the estimate exceeds the plan budget")
     ap.add_argument("--now", action="store_true", help="snapshot of every candidate pool at the head block")
     ap.add_argument("--hours", type=float, default=24)
     ap.add_argument("--step", type=int, default=30, help="blocks between samples (30 = 1 min on Base)")
@@ -509,7 +566,9 @@ def main():
         f"https://base-mainnet.g.alchemy.com/v2/{os.environ['ALCHEMY_KEY']}" if os.environ.get("ALCHEMY_KEY") else None)
     if not url:
         sys.exit("set ALCHEMY_KEY in .env or pass --rpc")
-    rpc = RPC(url, args.rpc_batch)
+    rpc = RPC(url, args.rpc_batch, args.rpc_per_s)
+    if rpc.plan:
+        print(f"provider pacing: {rpc.per_s:.0f} credits/s ({url.split('/')[2]})")
     cands = [c for c in discover(rpc, args) if c["tvl"] >= args.min_tvl]
     px = prices([c["asset"] for c in cands])
     cands = [c for c in cands if c["asset"] in px]
@@ -534,6 +593,8 @@ def main():
                   f"({(dpx / nav - 1) * 100:+.3f}%)  {gaps}")
         return
 
+    if not budget_ok(rpc, cands, px, args):
+        return
     blocks, series, lads = replay(rpc, cands, px, args)
     eps = episodes(rpc, cands, blocks, series, px, lads, args)
     if eps:
