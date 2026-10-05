@@ -133,6 +133,14 @@ class RPC:
                     retry += idx
                     continue
                 self.n += len(body)
+                if any(not isinstance(x, dict) or x.get("id") not in range(len(idx)) for x in res):
+                    # provider answered the batch with errors not tied to a request: shrink and retry
+                    msg = next((str(x.get("error"))[:150] for x in res if isinstance(x, dict) and x.get("error")), "")
+                    if self.chunk > 1:
+                        self.chunk = max(1, self.chunk // 2)
+                    print(f"  rpc batch error ({msg}); retrying with batches of {self.chunk}")
+                    retry += idx
+                    continue
                 for x in res:
                     k = idx[x["id"]]
                     err = x.get("error") or {}
@@ -140,6 +148,10 @@ class RPC:
                         out[k] = x["result"]
                     elif "rate" in str(err.get("message", "")).lower() or err.get("code") in (429, -32005, -32016):
                         retry.append(k)
+                    elif reqs[k][0] != "eth_call" and not getattr(self, "_warned", False):
+                        # reverting eth_calls are normal (non-vault tokens); anything else is worth seeing
+                        print(f"  rpc {reqs[k][0]} error: {str(err)[:150]}")
+                        self._warned = True
             if not retry:
                 break
             todo = retry
