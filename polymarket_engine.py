@@ -460,6 +460,13 @@ class Engine:
         p = CL.parse_question(question)
         return p if p and p["asset"] in getattr(self, "surfaces", {}) else None
 
+    def deribit_mid_no(self, parsed, days):
+        """Unbiased P(NO) at market IV: for VALUING positions, not for deciding trades."""
+        surf = self.surfaces.get(parsed["asset"])
+        if surf is None or days <= 0:
+            return None
+        return 1.0 - CL.model_prob(surf, parsed, days / 365, 1.0)
+
     def deribit_fair_no(self, parsed, days):
         """Conservative P(NO) for SELLING the YES: options already overprice tails,
         and we bump vol further, taking whichever makes YES more likely."""
@@ -620,12 +627,13 @@ class Engine:
             days = ((parse_iso(p["end_date"]) or now_utc()) - now_utc()).total_seconds() / 86400
             fair = self.deribit_fair_no(parsed, days) if parsed else None
             if fair is not None:
-                no_value = fair
+                no_value = fair  # conservative: drives the stop
+                self.s.put(f"mark:{p['token']}", self.deribit_mid_no(parsed, days))
             elif two_sided:
                 no_value = (book["bid"] + book["ask"]) / 2
+                self.s.put(f"mark:{p['token']}", no_value)
             else:
                 continue  # no trustworthy price this cycle: keep the last mark, don't trade
-            self.s.put(f"mark:{p['token']}", no_value)
             yes_now = 1.0 - no_value
             stop_at = max(self.a.stop_mult * (p["entry_yes"] or 0), self.a.stop_yes)
             reason = None
