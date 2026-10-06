@@ -24,7 +24,10 @@ What the engine does, every --poll seconds:
               returns, haircut by --k-haircut); fair NO = 1 - fair YES
   3. QUOTE    post a MAKER bid on the NO token: join/improve the best NO bid,
               never above fair NO - --min-edge, never crossing the ask
-              (never pays the spread; lottery buyers come to us)
+              (never pays the spread or taker fees; lottery buyers come to us).
+              Crypto: also bid YES on ranges priced below their cautious Deribit
+              fair value -- the other side of overpriced tails, ~40c at risk per
+              bet instead of ~95c; capped per asset+direction cluster
      ranked by edge per year of capital locked (short-dated first)
   4. SIZE     quarter-Kelly on the NO bet, capped per market / per event /
               per category / gross deployed, from LIVE wallet cash
@@ -260,6 +263,10 @@ class Store:
         self.db = sqlite3.connect(path)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
+        # positions predating YES-side trading are all NO
+        if "side" not in {r["name"] for r in self.db.execute("pragma table_info(positions)")}:
+            self.db.execute("alter table positions add column side text default 'NO'")
+            self.db.commit()
 
     def q(self, sql, *a):
         return self.db.execute(sql, a).fetchall()
@@ -290,9 +297,15 @@ class Store:
                    shares, shares * price, o["token"])
         else:
             self.x("insert or replace into positions(token,market_id,event_id,category,question,shares,"
-                   "cost,entry_yes,end_date,opened,status) values(?,?,?,?,?,?,?,?,?,?,'open')",
+                   "cost,entry_yes,end_date,opened,status,side) values(?,?,?,?,?,?,?,?,?,?,'open',?)",
                    o["token"], o["market_id"], o["event_id"], o["category"], o["question"],
-                   shares, shares * price, o["yes_mid"], o["end_date"], now_utc().isoformat())
+                   shares, shares * price, o["yes_mid"], o["end_date"], now_utc().isoformat(), side_of(o))
+
+
+def side_of(row):
+    """'YES' or 'NO' for an order row (side BUY_YES/BUY_NO) or a position row (side YES/NO)."""
+    s = (row["side"] if "side" in row.keys() else None) or "NO"
+    return "YES" if s.endswith("YES") else "NO"
 
 
 # ----------------------------------------------------------------- brokers
@@ -468,16 +481,51 @@ class Engine:
             return None
         return 1.0 - CL.model_prob(surf, parsed, days / 365, 1.0)
 
-    def deribit_fair_no(self, parsed, days):
-        """Conservative P(NO) for SELLING the YES: options already overprice tails,
-        and we bump vol further, taking whichever makes YES more likely."""
-        surf = self.surfaces.get(parsed["asset"])
+    def p_yes_band(self, parsed, days):
+        """(low, mid, high) P(YES) over IV x {1 - haircut, 1, 1 + bump}. Which multiplier is
+        cautious depends on the market (more vol raises tails, lowers middle ranges), so each
+        side takes the extreme that hurts it."""
+        surf = getattr(self, "surfaces", {}).get(parsed["asset"])
         if surf is None or days <= 0:
             return None
         t = days / 365
-        p_yes = max(CL.model_prob(surf, parsed, t, 1.0),
-                    CL.model_prob(surf, parsed, t, 1.0 + self.a.deribit_vol_bump))
-        return 1.0 - p_yes
+        ps = [CL.model_prob(surf, parsed, t, m)
+              for m in (1.0 - self.a.deribit_vol_haircut, 1.0, 1.0 + self.a.deribit_vol_bump)]
+        return min(ps), ps[1], max(ps)
+
+    def deribit_fair_no(self, parsed, days):
+        """Conservative P(NO): for buying NO (selling the YES)."""
+        band = self.p_yes_band(parsed, days)
+        return None if band is None else 1.0 - band[2]
+
+    def deribit_fair_yes(self, parsed, days):
+        """Conservative P(YES): for buying YES on a range the options say is underpriced."""
+        band = self.p_yes_band(parsed, days)
+        return None if band is None else band[0]
+
+    def fair_for(self, parsed, days, side):
+        return self.deribit_fair_yes(parsed, days) if side == "YES" else self.deribit_fair_no(parsed, days)
+
+    def mid_for(self, parsed, days, side):
+        no = self.deribit_mid_no(parsed, days)
+        return None if no is None else (1.0 - no if side == "YES" else no)
+
+    def cluster_of(self, category, question, side):
+        """Positions that lose together. Crypto: asset + the move that hurts (a NO on 'BTC above /
+        reach X' loses on a rally -> 'up'; a NO on 'dip to' loses on a drop -> 'down'; a YES on a
+        price range loses if price leaves it -> 'range'). Other categories: no cluster."""
+        p = self.crypto_parse(question) if category == "crypto" else None
+        if p is None:
+            return None
+        up, down = f"{p['asset']}:up", f"{p['asset']}:down"
+        if p["kind"] in ("touch_up", "above"):
+            return down if side == "YES" else up        # YES needs a rally; NO is hurt by one
+        if p["kind"] in ("touch_down", "below"):
+            return up if side == "YES" else down
+        if side == "YES":
+            return f"{p['asset']}:range"                 # YES on a range loses if price leaves it
+        spot = self.surfaces[p["asset"]].spot
+        return up if p["k1"] > spot else down if p["k2"] < spot else f"{p['asset']}:pin"
 
     def kelly_frac(self, q_no, price):
         if price >= 1 or q_no <= price:
@@ -498,16 +546,19 @@ class Engine:
         return self.b.balance(), pv
 
     def exposure(self):
-        by_mkt, by_evt, by_cat, gross = {}, {}, {}, 0.0
-        rows = [(p["market_id"], p["event_id"], p["category"], p["cost"]) for p in self.s.open_positions()]
-        rows += [(o["market_id"], o["event_id"], o["category"], o["price"] * (o["size"] - o["filled"]))
-                 for o in self.s.open_orders()]
-        for m, e, c, v in rows:
+        by_mkt, by_evt, by_cat, by_clu, gross = {}, {}, {}, {}, 0.0
+        rows = [(p["market_id"], p["event_id"], p["category"], p["cost"],
+                 self.cluster_of(p["category"], p["question"], side_of(p))) for p in self.s.open_positions()]
+        rows += [(o["market_id"], o["event_id"], o["category"], o["price"] * (o["size"] - o["filled"]),
+                  self.cluster_of(o["category"], o["question"], side_of(o))) for o in self.s.open_orders()]
+        for m, e, c, v, k in rows:
             by_mkt[m] = by_mkt.get(m, 0) + v
             by_evt[e] = by_evt.get(e, 0) + v
             by_cat[c] = by_cat.get(c, 0) + v
+            if k:
+                by_clu[k] = by_clu.get(k, 0) + v
             gross += v
-        return by_mkt, by_evt, by_cat, gross
+        return by_mkt, by_evt, by_cat, by_clu, gross
 
     # ---- risk guard
     def guard(self):
@@ -561,11 +612,13 @@ class Engine:
                     self.s.x("update positions set shares=?, cost=? where token=?", size, size * avg, tok)
                 continue
             o = self.s.q("select * from orders where token=? order by created desc limit 1", tok)
-            if o:
+            if o:  # the engine's own order filled while it wasn't looking
                 o = o[0]
+                side = side_of(o)
                 meta = (o["market_id"], o["event_id"], o["category"], o["question"], o["yes_mid"], o["end_date"])
                 self.s.x("update orders set status='filled', filled=size where id=?", o["id"])
             elif str(x.get("outcome", "")).lower() == "no":
+                side = "NO"
                 m = get_json(f"{GAMMA}/markets", params={"clob_token_ids": tok})
                 m = m[0] if isinstance(m, list) and m else {}
                 meta = (str(m.get("id", x.get("conditionId"))), str(x.get("eventId") or m.get("id")), "manual",
@@ -573,9 +626,9 @@ class Engine:
             else:
                 continue  # a YES bought by hand: not the engine's to manage
             self.s.x("insert or replace into positions(token,market_id,event_id,category,question,shares,"
-                     "cost,entry_yes,end_date,opened,status) values(?,?,?,?,?,?,?,?,?,?,'open')",
-                     tok, *meta[:4], size, size * avg, meta[4], meta[5], now_utc().isoformat())
-            log(f"ADOPT {size:.1f} NO @ {avg:.3f} found on exchange  {meta[3][:60]}")
+                     "cost,entry_yes,end_date,opened,status,side) values(?,?,?,?,?,?,?,?,?,?,'open',?)",
+                     tok, *meta[:4], size, size * avg, meta[4], meta[5], now_utc().isoformat(), side)
+            log(f"ADOPT {size:.1f} {side} @ {avg:.3f} found on exchange  {meta[3][:60]}")
 
     def cancel_all(self):
         for o in self.s.open_orders():
@@ -587,9 +640,10 @@ class Engine:
         for o in self.s.open_orders():
             book = fetch_book(o["token"])
             fill = self.b.sync(o, book)
+            side = side_of(o)
             if fill > 0:
                 self.s.add_fill(o, fill, o["price"])
-                log(f"FILL  {fill:.1f} NO @ {o['price']:.3f}  {o['question'][:70]}")
+                log(f"FILL  {fill:.1f} {side} @ {o['price']:.3f}  {o['question'][:70]}")
             if self.s.q("select status from orders where id=?", o["id"])[0][0] != "open":
                 continue
             age_min = (now_utc() - parse_iso(o["created"])).total_seconds() / 60
@@ -598,24 +652,25 @@ class Engine:
             parsed = self.crypto_parse(o["question"]) if o["category"] == "crypto" else None
             if parsed and not stale:
                 days = (parse_iso(o["end_date"]) - now_utc()).total_seconds() / 86400
-                fair = self.deribit_fair_no(parsed, days)
+                fair = self.fair_for(parsed, days, side)
                 if fair is None or o["price"] > fair - self.a.min_edge:
                     stale = True
-                    log(f"PULL  NO @ {o['price']:.3f} now above fair {fair if fair is not None else float('nan'):.3f} - edge"
-                        f"  {o['question'][:60]}")
+                    log(f"PULL  {side} @ {o['price']:.3f} now above fair "
+                        f"{fair if fair is not None else float('nan'):.3f} - edge  {o['question'][:60]}")
             if stale:
                 self.b.cancel(o["id"])
                 self.s.x("update orders set status='cancelled' where id=?", o["id"])
 
     def settle_and_exit(self):
         for p in self.s.open_positions():
+            side = side_of(p)
             res = market_status(p["market_id"])
             if res is not None:
-                payout_no = 1.0 - res
-                self.b.settle(p, payout_no)
+                payout = float(res) if side == "YES" else 1.0 - res
+                self.b.settle(p, payout)
                 self.s.x("update positions set status='closed', exit_value=?, closed=? where token=?",
-                         p["shares"] * payout_no, now_utc().isoformat(), p["token"])
-                log(f"SETTLED {'WIN ' if payout_no else 'LOSS'} pnl={p['shares'] * payout_no - p['cost']:+.2f}"
+                         p["shares"] * payout, now_utc().isoformat(), p["token"])
+                log(f"SETTLED {'WIN ' if payout else 'LOSS'} {side} pnl={p['shares'] * payout - p['cost']:+.2f}"
                     f"  {p['question'][:70]}")
                 continue
             book = fetch_book(p["token"])
@@ -626,28 +681,29 @@ class Engine:
                              and book["ask"] - book["bid"] <= self.a.max_mark_spread)
             parsed = self.crypto_parse(p["question"]) if p["category"] == "crypto" else None
             days = ((parse_iso(p["end_date"]) or now_utc()) - now_utc()).total_seconds() / 86400
-            fair = self.deribit_fair_no(parsed, days) if parsed else None
+            fair = self.fair_for(parsed, days, side) if parsed else None
             if fair is not None:
-                no_value = fair  # conservative: drives the stop
-                self.s.put(f"mark:{p['token']}", self.deribit_mid_no(parsed, days))
+                value = fair  # conservative value of the token we hold: drives the stop
+                self.s.put(f"mark:{p['token']}", self.mid_for(parsed, days, side))
             elif two_sided:
-                no_value = (book["bid"] + book["ask"]) / 2
-                self.s.put(f"mark:{p['token']}", no_value)
+                value = (book["bid"] + book["ask"]) / 2
+                self.s.put(f"mark:{p['token']}", value)
             else:
                 continue  # no trustworthy price this cycle: keep the last mark, don't trade
-            yes_now = 1.0 - no_value
-            stop_at = max(self.a.stop_mult * (p["entry_yes"] or 0), self.a.stop_yes)
             reason = None
-            if yes_now >= stop_at:
-                reason = f"STOP yes {yes_now:.3f} >= {stop_at:.3f}"
+            # NO legs: stop when the longshot is coming true. YES legs risk only their premium
+            # (sized for that), so they have no stop.
+            stop_at = max(self.a.stop_mult * (p["entry_yes"] or 0), self.a.stop_yes)
+            if side == "NO" and 1.0 - value >= stop_at:
+                reason = f"STOP yes {1.0 - value:.3f} >= {stop_at:.3f}"
             elif self.a.recycle_at and two_sided and book["bid"] >= self.a.recycle_at:
                 reason = f"RECYCLE bid {book['bid']:.3f}"
             elif parsed and two_sided and self.a.edge_exit is not None:
                 # the edge was the gap to fair value: once the market pays fair, holding to
                 # resolution only adds risk and locks capital -- take it and redeploy
-                fair_mid = self.deribit_mid_no(parsed, days)
+                fair_mid = self.mid_for(parsed, days, side)
                 if fair_mid is not None and book["bid"] >= fair_mid - self.a.edge_exit:
-                    reason = f"EDGE-DONE bid {book['bid']:.3f} >= fair {fair_mid:.3f}"
+                    reason = f"EDGE-DONE {side} bid {book['bid']:.3f} >= fair {fair_mid:.3f}"
             if reason:
                 if not two_sided:
                     log(f"{reason} but the book is too thin to sell into; holding  {p['question'][:60]}")
@@ -717,13 +773,18 @@ class Engine:
                 if not (self.a.min_days <= days <= self.a.max_days):
                     continue
                 last_yes = to_float(prices[toks[2]])
-                if last_yes is None or not (self.a.min_yes <= last_yes < self.a.max_yes):
+                if last_yes is None:
                     continue
                 deribit = None
                 if cat == "crypto":
                     deribit = self.crypto_parse(m.get("question") or "")
                     if deribit is None and not self.a.crypto_any:
                         continue  # memecoins, token launches: no fair value, don't guess
+                in_no_band = self.a.min_yes <= last_yes < self.a.max_yes
+                in_yes_band = bool(deribit) and self.a.buy_yes and \
+                    self.a.buy_yes_min <= last_yes < self.a.buy_yes_max
+                if not (in_no_band or in_yes_band):
+                    continue
                 ev = (m.get("events") or [{}])[0]
                 out.append({"market_id": str(m["id"]), "event_id": str(ev.get("id", m["id"])),
                             "n_children": len(ev.get("markets") or []) or 1, "category": cat, "k": k,
@@ -735,35 +796,47 @@ class Engine:
         out.sort(key=lambda c: (-c["n_children"], -c["vol"]))
         return out
 
+    def maker_price(self, fair, book, tick):
+        """Join/improve the best bid, never above fair - min_edge, never crossing the ask."""
+        best_bid = book["bid"] or 0.0
+        price = min(round_down(fair - self.a.min_edge, tick), round(book["ask"] - tick, 6),
+                    round(best_bid + tick, 6))
+        if price <= 0 or price < best_bid or fair - price < self.a.min_edge:
+            return None
+        return price
+
     def quote(self, c):
-        """Maker NO bid for a candidate from live books, or None if no edge."""
+        """Best maker bid for a candidate from live books -- NO when the YES is overpriced,
+        YES when (crypto only) the options say the YES is underpriced -- or None."""
         yb, nb = fetch_book(c["yes_tok"]), fetch_book(c["no_tok"])
         if not (yb and nb and yb["bid"] is not None and yb["ask"] is not None and nb["ask"] is not None):
             return None
         yes_mid = (yb["bid"] + yb["ask"]) / 2
-        if not (self.a.min_yes <= yes_mid < self.a.max_yes):
-            return None
-        if c.get("deribit"):
-            fair = self.deribit_fair_no(c["deribit"], c["days"])
-            if fair is None:
-                return None
-        else:
-            fair = self.fair_no(yes_mid, c["k"])
-        tick = c["tick"]
-        best_bid = nb["bid"] or 0.0
-        price = min(round_down(fair - self.a.min_edge, tick), round(nb["ask"] - tick, 6),
-                    round(best_bid + tick, 6))
-        if price <= 0 or price < best_bid or fair - price < self.a.min_edge:
+        opts = []
+        if self.a.min_yes <= yes_mid < self.a.max_yes:
+            fair = self.deribit_fair_no(c["deribit"], c["days"]) if c.get("deribit") \
+                else self.fair_no(yes_mid, c["k"])
+            price = self.maker_price(fair, nb, c["tick"]) if fair is not None else None
+            if price:
+                opts.append(("NO", c["no_tok"], fair, price))
+        if c.get("deribit") and self.a.buy_yes and self.a.buy_yes_min <= yes_mid < self.a.buy_yes_max:
+            fair = self.deribit_fair_yes(c["deribit"], c["days"])
+            price = self.maker_price(fair, yb, c["tick"]) if fair is not None else None
+            if price:
+                opts.append(("YES", c["yes_tok"], fair, price))
+        if not opts:
             return None
         # capital is locked until resolution: rank by expected return per year locked
-        ann = (fair - price) / price * 365 / max(c["days"], 0.5)
-        return {**c, "yes_mid": yes_mid, "fair": fair, "price": price, "ann": ann,
-                "src": "deribit" if c.get("deribit") else "bias"}
+        ann = lambda o: (o[2] - o[3]) / o[3] * 365 / max(c["days"], 0.5)
+        side, tok, fair, price = max(opts, key=ann)
+        return {**c, "side": side, "token": tok, "yes_mid": yes_mid, "fair": fair, "price": price,
+                "ann": ann((side, tok, fair, price)), "src": "deribit" if c.get("deribit") else "bias"}
 
     def enter(self, equity):
-        if self.available() - self.a.cash_buffer * equity < 5 * (1 - self.a.max_yes):
+        cheapest = min(1 - self.a.max_yes, self.a.buy_yes_min if self.a.buy_yes else 1.0)
+        if self.available() - self.a.cash_buffer * equity < 5 * cheapest:
             return  # not enough free cash for even a minimum order; skip the book scan
-        by_mkt, by_evt, by_cat, gross = self.exposure()
+        by_mkt, by_evt, by_cat, by_clu, gross = self.exposure()
         held = {p["market_id"] for p in self.s.open_positions()} | {o["market_id"] for o in self.s.open_orders()}
         pool = sorted((c for c in self.candidates() if c["market_id"] not in held), key=lambda c: c["days"])
         quotes = [q for q in map(self.quote, pool[:self.a.max_quotes]) if q]
@@ -773,30 +846,35 @@ class Engine:
             if placed >= self.a.max_new:
                 break
             price = q["price"]
+            clu = self.cluster_of(q["category"], q["question"], q["side"])
             f = self.kelly_frac(q["fair"], price)
             budget = min(f * equity,
                          self.a.cap_market * equity - by_mkt.get(q["market_id"], 0),
                          self.a.cap_event * equity - by_evt.get(q["event_id"], 0),
                          self.a.cap_category * equity - by_cat.get(q["category"], 0),
+                         (self.a.cap_cluster * equity - by_clu.get(clu, 0)) if clu else float("inf"),
                          self.a.cap_gross * equity - gross,
                          self.available() - self.a.cash_buffer * equity)
             size = math.floor(budget / price)
             if size < q["min_size"]:
                 continue
-            oid = self.b.place_bid(q["no_tok"], price, size)
+            oid = self.b.place_bid(q["token"], price, size)
             if not oid:
                 continue
-            self.s.x("insert into orders values(?,?,?,?,?,?,?,?,?,0,'open',?,?,?)", oid, q["no_tok"],
-                     q["market_id"], q["event_id"], q["category"], q["question"], "BUY_NO", price, size,
+            self.s.x("insert into orders values(?,?,?,?,?,?,?,?,?,0,'open',?,?,?)", oid, q["token"],
+                     q["market_id"], q["event_id"], q["category"], q["question"], "BUY_" + q["side"], price, size,
                      now_utc().isoformat(), q["yes_mid"], q["end"])
             cost = price * size
             by_mkt[q["market_id"]] = by_mkt.get(q["market_id"], 0) + cost
             by_evt[q["event_id"]] = by_evt.get(q["event_id"], 0) + cost
             by_cat[q["category"]] = by_cat.get(q["category"], 0) + cost
+            if clu:
+                by_clu[clu] = by_clu.get(clu, 0) + cost
             gross += cost
             placed += 1
-            log(f"BID   {size:>5} NO @ {price:.3f} (fair {q['fair']:.3f}, yes {q['yes_mid']:.3f}, "
-                f"{q['days']:.1f}d, {q['ann']:+.0%}/yr, {q['category']}/{q['src']})  {q['question'][:60]}")
+            log(f"BID   {size:>5} {q['side']:<3} @ {price:.3f} (fair {q['fair']:.3f}, yes {q['yes_mid']:.3f}, "
+                f"{q['days']:.1f}d, {q['ann']:+.0%}/yr, {q['category']}/{q['src']}"
+                f"{', ' + clu if clu else ''})  {q['question'][:60]}")
 
     def cycle(self):
         self.refresh_surfaces()
@@ -829,7 +907,7 @@ def report(store):
         print(f"  {c:<10} n={n:<4} cost={cost:>9.2f}  pnl={pl:+9.2f}  ({pl / cost:+.2%})")
     print(f"\nopen positions: {len(opn)}")
     for p in opn:
-        print(f"  market {p['market_id']:<9} {p['shares']:>7.1f} NO  cost {p['cost']:>8.2f}  entry_yes {p['entry_yes']:.3f}  "
+        print(f"  market {p['market_id']:<9} {p['shares']:>7.1f} {side_of(p):<3} cost {p['cost']:>8.2f}  entry_yes {p['entry_yes']:.3f}  "
               f"ends {p['end_date'][:10]}  {p['question'][:60]}")
     eq = store.q("select * from equity order by ts desc limit 1")
     if eq:
@@ -861,7 +939,13 @@ def main():
     ap.add_argument("--k-haircut", type=float, default=0.10, help="inflate fair YES by this for model error")
     ap.add_argument("--min-edge", type=float, default=0.01, help="min fair NO minus bid, in $")
     ap.add_argument("--deribit-vol-bump", type=float, default=0.10,
-                    help="crypto: also price at IV x (1+bump) and use the higher YES probability")
+                    help="crypto: also price at IV x (1+bump); each side uses whichever IV hurts it")
+    ap.add_argument("--deribit-vol-haircut", type=float, default=0.15,
+                    help="crypto: also price at IV x (1-haircut); each side uses whichever IV hurts it")
+    ap.add_argument("--no-buy-yes", dest="buy_yes", action="store_false",
+                    help="crypto: don't bid YES on ranges the options say are underpriced")
+    ap.add_argument("--buy-yes-min", type=float, default=0.10, help="crypto YES bids only for YES priced >= this")
+    ap.add_argument("--buy-yes-max", type=float, default=0.70, help="... and < this")
     ap.add_argument("--crypto-any", action="store_true",
                     help="also trade crypto markets Deribit can't price (memecoins etc.) on the bias model")
     ap.add_argument("--reprice-min", type=float, default=30, help="cancel/requote orders older than this")
@@ -870,6 +954,8 @@ def main():
     ap.add_argument("--cap-market", type=float, default=0.03)
     ap.add_argument("--cap-event", type=float, default=0.06)
     ap.add_argument("--cap-category", type=float, default=0.30)
+    ap.add_argument("--cap-cluster", type=float, default=0.25,
+                    help="crypto: max exposure to one asset+direction (e.g. all 'BTC down' bets)")
     ap.add_argument("--cap-gross", type=float, default=0.75)
     ap.add_argument("--cash-buffer", type=float, default=0.10)
     ap.add_argument("--max-new", type=int, default=10, help="max new orders per cycle")
