@@ -64,13 +64,21 @@ OUT = "base_nav_episodes.csv"
 BLOCK_SECONDS = 2.0
 V2_FEE = {"uniswap-v2-base": 0.003, "sushiswap-v2-base": 0.003, "pancakeswap-v2-base": 0.0025}
 PROBE = "0x000000000000000000000000000000000000dEaD"
+# Uniswap v4 on Base, from Uniswap's deployments page (developers.uniswap.org/docs/protocols/v4/deployments)
+V4_POSM = "0x7c5f5a4bbd8fd63184577525326123b519429bdc"     # PositionManager: poolKeys(bytes25)
+V4_STATE = "0xa3c0c9b65bad0b08107aa264b0f3db444b867a71"    # StateView: getSlot0 / getLiquidity
+V4_QUOTER = "0x0d5e0f971ed27fbff6c2837bf31316121532048d"   # V4Quoter: quoteExactInputSingle
+V4_MAX_FEE = 10_000                                         # pips; above 1% a pool can't carry a NAV arb
+LADDER_KINDS = ("solidly", "v4")                            # priced from an exact-output quote ladder
 DEPOSIT_TOPIC = "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7"  # ERC-4626 Deposit
 
 SEL = {"asset": "0x38d52e0f", "decimals": "0x313ce567", "symbol": "0x95d89b41",
        "previewRedeem": "0x4cdad506", "previewDeposit": "0xef8b30f7", "maxDeposit": "0x402d267d",
        "token0": "0x0dfe1681", "token1": "0xd21220a7", "slot0": "0x3850c7bd",
        "liquidity": "0x1a686502", "fee": "0xddca3f43", "getAmountOut": "0xf140a35a",
-       "stable": "0x22be3de1", "getReserves": "0x0902f1ac"}
+       "stable": "0x22be3de1", "getReserves": "0x0902f1ac",
+       "poolKeys": "0x86b6be7d", "getSlot0": "0xc815641c", "getLiquidity": "0xfa6793d5",
+       "quoteExactInputSingle": "0xaa9d21cb"}
 
 
 # ----------------------------------------------------------------- helpers
@@ -312,18 +320,61 @@ def enrich(rpc, cands):
     out, dropped = [], {}
     for c in cands:
         n_before = len(out)
-        _enrich_one(rpc, c, out)
-        if len(out) == n_before:
-            d = dropped.setdefault(c["dex"], [0, 0.0, []])
+        if c["dex"].startswith("uniswap-v4"):
+            why = _enrich_v4(rpc, c, out)
+        else:
+            _enrich_one(rpc, c, out)
+            why = None if len(out) > n_before else "pool type not readable yet"
+        if why:
+            group = "swap fee > 1% (untradable)" if why.startswith("swap fee") else why
+            d = dropped.setdefault((c["dex"], group), [0, 0.0, []])
             d[0] += 1
             d[1] += c["tvl"]
-            d[2].append(c)
+            d[2].append((c, why))
     if dropped:
-        print("  share/asset pools skipped (pool type not readable yet), by DEX:")
-        for dex, (n, tvl, cs) in sorted(dropped.items(), key=lambda kv: -kv[1][1]):
-            top = max(cs, key=lambda c: c["tvl"])
-            print(f"    {dex:<26} {n:>4} pools  ${tvl:>12,.0f} total  largest: {top['name'][:32]} ${top['tvl']:,.0f}")
+        print("  share/asset pools skipped, by DEX and reason (TVL is GeckoTerminal's figure):")
+        for (dex, why), (n, tvl, cs) in sorted(dropped.items(), key=lambda kv: -kv[1][1]):
+            top, top_why = max(cs, key=lambda x: x[0]["tvl"])
+            print(f"    {dex:<24} {why:<28} {n:>4} pools  ${tvl:>12,.0f}  largest: {top['name'][:28]} "
+                  f"${top['tvl']:,.0f} ({top_why})")
     return out
+
+
+def _enrich_v4(rpc, c, out):
+    """Uniswap v4: GeckoTerminal's 'address' is the 32-byte PoolId. Recover the PoolKey from
+    PositionManager.poolKeys(bytes25(poolId)) and read fee/liquidity from StateView."""
+    pid = c["pool"]
+    if len(pid) != 66:
+        return "not a v4 pool id"
+    r = rpc.calls([(V4_POSM, SEL["poolKeys"] + pid[2:52] + "0" * 14, "latest"),
+                   (V4_STATE, SEL["getSlot0"] + pid[2:], "latest"), (V4_STATE, SEL["getLiquidity"] + pid[2:], "latest"),
+                   (c["share"], SEL["decimals"], "latest"), (c["asset"], SEL["decimals"], "latest"),
+                   (c["share"], SEL["symbol"], "latest"), (c["asset"], SEL["symbol"], "latest")])
+    if not (r[0] and r[1] and r[3] and r[4]):
+        return "pool key not found"
+    w = words(r[0])
+    if w[3] == 0:
+        return "pool key not found"
+    key = ("0x%040x" % w[0], "0x%040x" % w[1], w[2], w[3] - 2 ** 256 if w[3] >= 2 ** 255 else w[3], "0x%040x" % w[4])
+    if {key[0], key[1]} != {c["share"], c["asset"]}:
+        return "currencies differ (native ETH?)"
+    lp_fee = words(r[1])[3]
+    c.update(v4key=key, kind="v4", fee=lp_fee / 1e6, v4_liquidity=words(r[2])[0] if r[2] else 0,
+             share_dec=words(r[3])[0], asset_dec=words(r[4])[0],
+             share_sym=decode_str(r[5]) if r[5] else "?", asset_sym=decode_str(r[6]) if r[6] else "?",
+             share_is_t0=key[0] == c["share"])
+    if lp_fee > V4_MAX_FEE:
+        return f"swap fee {lp_fee / 1e4:.2f}% (untradable)"
+    out.append(c)
+    return None
+
+
+def v4_quote_data(key, zero_for_one, amount):
+    """V4Quoter.quoteExactInputSingle(((c0,c1,fee,tickSpacing,hooks),zeroForOne,exactAmount,hookData=''))."""
+    c0, c1, fee, ts, hooks = key
+    return (SEL["quoteExactInputSingle"] + u256(0x20) + addr_arg(c0) + addr_arg(c1) + u256(fee)
+            + format(ts % 2 ** 256, "064x") + addr_arg(hooks) + u256(1 if zero_for_one else 0)
+            + u256(min(amount, 2 ** 128 - 1)) + u256(0x100) + u256(0))
 
 
 def _enrich_one(rpc, c, out):
@@ -369,6 +420,12 @@ def state_calls(c, block, ladder_sizes=None):
         q += [(c["pool"], SEL["slot0"]), (c["pool"], SEL["liquidity"])]
     elif c["kind"] == "v2":
         q += [(c["pool"], SEL["getReserves"])]
+    elif c["kind"] == "v4":  # exact quotes from Uniswap's V4Quoter (hooks and dynamic fees included)
+        asset_is_c0 = c["v4key"][0] == c["asset"]
+        for amt in ladder_sizes["asset"]:
+            q.append((V4_QUOTER, v4_quote_data(c["v4key"], asset_is_c0, amt)))
+        for amt in ladder_sizes["share"]:
+            q.append((V4_QUOTER, v4_quote_data(c["v4key"], not asset_is_c0, amt)))
     else:  # solidly: ladder of getAmountOut in both directions
         for amt in ladder_sizes["asset"]:
             q.append((c["pool"], SEL["getAmountOut"] + u256(amt) + addr_arg(c["asset"])))
@@ -503,7 +560,7 @@ def closers(rpc, pool, block):
 def replay(rpc, cands, px, args):
     head = rpc.block_number()
     blocks = list(range(head - int(args.hours * 3600 / BLOCK_SECONDS), head + 1, args.step))
-    lads = {c["pool"]: ladder(c, px[c["asset"]]) for c in cands if c["kind"] == "solidly"}
+    lads = {c["pool"]: ladder(c, px[c["asset"]]) for c in cands if c["kind"] in LADDER_KINDS}
     print(f"replaying {len(blocks)} samples x {len(cands)} pools, blocks {blocks[0]}..{blocks[-1]} "
           f"({args.hours}h, every {args.step} blocks)")
     series = {}  # (pool, dir) -> list of (block, profit, size, nav, dex_px)
@@ -527,7 +584,7 @@ def replay(rpc, cands, px, args):
 def budget_ok(rpc, cands, px, args):
     """Estimate the replay's cost against the provider's free-plan budget before spending it."""
     samples = int(args.hours * 3600 / BLOCK_SECONDS / args.step) + 1
-    per_sample = sum(len(state_calls(c, 0, ladder(c, px[c["asset"]]) if c["kind"] == "solidly" else None))
+    per_sample = sum(len(state_calls(c, 0, ladder(c, px[c["asset"]]) if c["kind"] in LADDER_KINDS else None))
                      for c in cands)
     calls = samples * per_sample
     credits = calls * rpc.cost("eth_call")
@@ -618,7 +675,7 @@ def main():
         head = rpc.block_number()
         print(f"\nsnapshot at block {head}: net USD at optimal size (negative = no gap)")
         for c in cands:
-            lad = ladder(c, px[c["asset"]]) if c["kind"] == "solidly" else None
+            lad = ladder(c, px[c["asset"]]) if c["kind"] in LADDER_KINDS else None
             ev = evaluate(c, rpc.calls(state_calls(c, head, lad)), px[c["asset"]], args, lad)
             if not ev:
                 print(f"  {c['share_sym']:>14}/{c['asset_sym']:<8} not tradable now: zero active liquidity at the "
