@@ -155,10 +155,14 @@ class RPC:
                 try:
                     r = SESSION.post(self.url, json=body, timeout=60)
                     res = r.json() if r.status_code not in (402, 429) else None
+                    if r.status_code != 200:
+                        print(f"  rpc HTTP {r.status_code} on a batch of {len(body)} "
+                              f"(attempt {attempt + 1}/8): {r.text[:120]!r}")
                     if r.status_code == 402:
                         sys.exit("RPC provider: plan credit limit reached (HTTP 402). Wait for the reset "
                                  "or use another provider via --rpc.")
-                except Exception:  # network error or non-JSON body: retry
+                except Exception as e:  # network error or non-JSON body: retry
+                    print(f"  rpc request failed (attempt {attempt + 1}/8): {type(e).__name__}: {str(e)[:120]}")
                     res = None
                 time.sleep(wait)
                 if not isinstance(res, list):
@@ -204,7 +208,10 @@ class RPC:
                            for t, d, b in triples])
 
     def block_number(self):
-        return int(self.batch([("eth_blockNumber", [])])[0], 16)
+        r = self.batch([("eth_blockNumber", [])])[0]
+        if r is None:
+            sys.exit("RPC never answered eth_blockNumber -- check the URL/key and the errors above")
+        return int(r, 16)
 
 
 def get_json(url, params=None):
@@ -227,9 +234,11 @@ def discover(rpc, args):
     2) keep those whose asset() answers  3) ask GeckoTerminal for each vault's DEX pools."""
     if os.path.exists(POOL_CACHE) and not args.refresh:
         return json.load(open(POOL_CACHE, encoding="utf-8"))
+    print("discovery: reading head block ...", flush=True)
     head = rpc.block_number()
     lo = head - int(args.discover_hours * 3600 / BLOCK_SECONDS)
     wins = [(b, min(b + args.log_window - 1, head)) for b in range(lo, head + 1, args.log_window)]
+    print(f"  head {head}; scanning {len(wins)} log windows for vault Deposit events ...", flush=True)
     logs = rpc.batch([("eth_getLogs", [{"fromBlock": hex(a), "toBlock": hex(b), "topics": [DEPOSIT_TOPIC]}])
                       for a, b in wins])
     counts = {}
@@ -240,6 +249,7 @@ def discover(rpc, args):
     if any(x is None for x in logs):
         print(f"  warning: {sum(x is None for x in logs)}/{len(wins)} log windows failed -- try smaller --log-window")
     emitters = sorted(counts, key=lambda a: -counts[a])
+    print(f"  checking asset() on {len(emitters)} emitters ...", flush=True)
     res = rpc.calls([(a, SEL["asset"], "latest") for a in emitters])
     vaults = {a: "0x" + r[-40:] for a, r in zip(emitters, res) if r and len(r) == 66 and 0 < int(r, 16) < 2 ** 160}
     print(f"  {len(emitters)} Deposit emitters over {args.discover_hours}h, {len(vaults)} answer asset(); "
