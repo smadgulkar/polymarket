@@ -510,6 +510,13 @@ class Engine:
         no = self.deribit_mid_no(parsed, days)
         return None if no is None else (1.0 - no if side == "YES" else no)
 
+    def yes_eligible(self, parsed, days):
+        """YES bids only on price RANGES with time left. A YES on a near-the-money threshold
+        ('above $86k today') is a fast-moving coin flip: between 5-minute cycles a resting
+        bid goes stale and gets filled by whoever knows the price already moved."""
+        return bool(parsed) and self.a.buy_yes and parsed["kind"] in self.a.buy_yes_kinds \
+            and days >= self.a.buy_yes_min_days
+
     def cluster_of(self, category, question, side):
         """Positions that lose together. Crypto: asset + the move that hurts (a NO on 'BTC above /
         reach X' loses on a rally -> 'up'; a NO on 'dip to' loses on a drop -> 'down'; a YES on a
@@ -781,7 +788,7 @@ class Engine:
                     if deribit is None and not self.a.crypto_any:
                         continue  # memecoins, token launches: no fair value, don't guess
                 in_no_band = self.a.min_yes <= last_yes < self.a.max_yes
-                in_yes_band = bool(deribit) and self.a.buy_yes and \
+                in_yes_band = self.yes_eligible(deribit, days) and \
                     self.a.buy_yes_min <= last_yes < self.a.buy_yes_max
                 if not (in_no_band or in_yes_band):
                     continue
@@ -819,7 +826,7 @@ class Engine:
             price = self.maker_price(fair, nb, c["tick"]) if fair is not None else None
             if price:
                 opts.append(("NO", c["no_tok"], fair, price))
-        if c.get("deribit") and self.a.buy_yes and self.a.buy_yes_min <= yes_mid < self.a.buy_yes_max:
+        if self.yes_eligible(c.get("deribit"), c["days"]) and self.a.buy_yes_min <= yes_mid < self.a.buy_yes_max:
             fair = self.deribit_fair_yes(c["deribit"], c["days"])
             price = self.maker_price(fair, yb, c["tick"]) if fair is not None else None
             if price:
@@ -946,6 +953,10 @@ def main():
                     help="crypto: don't bid YES on ranges the options say are underpriced")
     ap.add_argument("--buy-yes-min", type=float, default=0.10, help="crypto YES bids only for YES priced >= this")
     ap.add_argument("--buy-yes-max", type=float, default=0.70, help="... and < this")
+    ap.add_argument("--buy-yes-kinds", nargs="+", default=["between"],
+                    help="crypto market kinds that get YES bids (between, above, below, touch_up, touch_down)")
+    ap.add_argument("--buy-yes-min-days", type=float, default=0.5,
+                    help="no YES bids on markets resolving sooner than this")
     ap.add_argument("--crypto-any", action="store_true",
                     help="also trade crypto markets Deribit can't price (memecoins etc.) on the bias model")
     ap.add_argument("--reprice-min", type=float, default=30, help="cancel/requote orders older than this")
