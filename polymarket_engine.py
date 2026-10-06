@@ -28,7 +28,8 @@ What the engine does, every --poll seconds:
      ranked by edge per year of capital locked (short-dated first)
   4. SIZE     quarter-Kelly on the NO bet, capped per market / per event /
               per category / gross deployed, from LIVE wallet cash
-  5. MANAGE   cancel+requote stale orders; exit if the thesis breaks
+  5. MANAGE   cancel+requote stale orders; crypto: sell once the bid reaches
+              Deribit fair value (edge captured, free the capital); exit if the thesis breaks
               (YES mid >= max(--stop-mult x entry, --stop-yes)); optionally
               sell NO >= --recycle-at early to recycle capital
   6. SETTLE   resolved markets -> realize PnL (paper) / flag for redeem (live)
@@ -641,6 +642,12 @@ class Engine:
                 reason = f"STOP yes {yes_now:.3f} >= {stop_at:.3f}"
             elif self.a.recycle_at and two_sided and book["bid"] >= self.a.recycle_at:
                 reason = f"RECYCLE bid {book['bid']:.3f}"
+            elif parsed and two_sided and self.a.edge_exit is not None:
+                # the edge was the gap to fair value: once the market pays fair, holding to
+                # resolution only adds risk and locks capital -- take it and redeploy
+                fair_mid = self.deribit_mid_no(parsed, days)
+                if fair_mid is not None and book["bid"] >= fair_mid - self.a.edge_exit:
+                    reason = f"EDGE-DONE bid {book['bid']:.3f} >= fair {fair_mid:.3f}"
             if reason:
                 if not two_sided:
                     log(f"{reason} but the book is too thin to sell into; holding  {p['question'][:60]}")
@@ -873,6 +880,10 @@ def main():
     ap.add_argument("--stop-mult", type=float, default=3.0)
     ap.add_argument("--stop-yes", type=float, default=0.35)
     ap.add_argument("--recycle-at", type=float, default=0.99, help="sell NO at/above this bid (0=off)")
+    ap.add_argument("--edge-exit", type=float, default=0.0,
+                    help="crypto: sell once the NO bid is within this of Deribit fair value (edge captured)")
+    ap.add_argument("--hold-to-resolution", dest="edge_exit", action="store_const", const=None,
+                    help="disable --edge-exit")
     ap.add_argument("--daily-stop", type=float, default=0.05)
     ap.add_argument("--max-dd", type=float, default=0.15)
     args = ap.parse_args()
