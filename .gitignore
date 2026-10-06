@@ -47,3 +47,5 @@ crypto_longshots_log.csv
 base_pools_cache.json
 base_nav_episodes.csv
 base_vault_pools_cache.json
+census_liquidations.csv
+census_flashloans.csv
