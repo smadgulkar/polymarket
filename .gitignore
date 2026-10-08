@@ -49,3 +49,4 @@ base_nav_episodes.csv
 base_vault_pools_cache.json
 census_liquidations.csv
 census_flashloans.csv
+capacity_trades.csv
