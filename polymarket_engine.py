@@ -904,7 +904,8 @@ class Engine:
 
 def history(store, csv_path="trade_history.csv"):
     """Start, money in, every closed trade in order with a running total, and where it stands now."""
-    eq = store.q("select * from equity order by ts")
+    # skip zero snapshots: the first live run read a $0 balance (pre-V2 client), not an empty wallet
+    eq = store.q("select * from equity where total > 0 order by ts")
     deps = store.get("deposits", [])
     closed = store.q("select * from positions where status='closed' order by closed")
     opn = store.open_positions()
@@ -915,7 +916,7 @@ def history(store, csv_path="trade_history.csv"):
     added = sum(d["amount"] for d in deps)
     invested = start["total"] + added
     print(f"started      {start['ts'][:16]} UTC with ${start['total']:.2f} "
-          f"(first equity snapshot{'; before that, live tests' if closed and closed[0]['opened'] < start['ts'] else ''})")
+          f"(first non-zero equity snapshot)")
     for d in deps:
         print(f"deposit      {d['ts'][:16]} UTC  +${d['amount']:.2f}  {d.get('note', '')}")
     days = (parse_iso(last["ts"]) - parse_iso(start["ts"])).total_seconds() / 86400
