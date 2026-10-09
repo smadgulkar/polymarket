@@ -98,6 +98,12 @@ def is_weather_temp(m):
     return "temperature" in (m.get("question") or "").lower()
 
 
+def temp_kind(question):
+    """'max' for daily-high markets, 'min' for daily-low ones ('lowest temperature in London')."""
+    q = (question or "").lower()
+    return "min" if ("lowest" in q or "low temperature" in q or "minimum" in q) else "max"
+
+
 # ----------------------------------------------------------------- forecasts
 class Forecasts:
     def __init__(self):
@@ -111,14 +117,15 @@ class Forecasts:
                 if s.get("icaoId") and s.get("lat") is not None:
                     self.coords[s["icaoId"]] = (s["lat"], s["lon"])
 
-    def members(self, station, unit, day):
-        """Ensemble daily-max values for that station-local date, or None."""
-        key = (station, unit)
+    def members(self, station, unit, day, kind="max"):
+        """Ensemble daily-max (or daily-min) values for that station-local date, or None."""
+        var = f"temperature_2m_{kind}"
+        key = (station, unit, kind)
         if key not in self.cache:
             lat, lon = self.coords.get(station, (None, None))
             d = None
             if lat is not None:
-                d = get_json(ENSEMBLE, params={"latitude": lat, "longitude": lon, "daily": "temperature_2m_max",
+                d = get_json(ENSEMBLE, params={"latitude": lat, "longitude": lon, "daily": var,
                                                "temperature_unit": "fahrenheit" if unit == "F" else "celsius",
                                                "timezone": "auto", "forecast_days": 7,
                                                "models": "ecmwf_ifs025,gfs025"})
@@ -128,7 +135,7 @@ class Forecasts:
         if not daily or day.isoformat() not in daily.get("time", []):
             return None
         i = daily["time"].index(day.isoformat())
-        vals = [daily[k][i] for k in daily if k.startswith("temperature_2m_max_member") and daily[k][i] is not None]
+        vals = [daily[k][i] for k in daily if k.startswith(f"{var}_member") and daily[k][i] is not None]
         return vals or None
 
 
@@ -182,22 +189,32 @@ def main():
         day = parse_date(m.get("question"), end)
         toks = tokens_of(m)
         if not (b and st and day and toks and m.get("conditionId")):
-            unparsed.append(f"{m.get('question', '')[:70]} | bucket={b} station={st} day={day}")
+            unparsed.append((m, b, st, day))
             continue
         cands.append((m, b, st, day, toks))
     fc.load_stations([c[2] for c in cands])
     print(f"parsed {len(cands)} range markets across {len({c[2] for c in cands})} stations "
-          f"({len(fc.coords)} located); {len(unparsed)} unparsed")
+          f"({len(fc.coords)} located); {len(unparsed)} unparsed "
+          f"({sum(1 for c in cands if temp_kind(c[0].get('question')) == 'min')} of the parsed are daily-low markets)")
     if args.unparsed or not cands:
-        for u in unparsed[:40]:
-            print("   ", u)
+        # one example per city: show where the settlement station is named, so the parser can learn it
+        shown = set()
+        for m, b, st, day in unparsed:
+            city = re.sub(r".*temperature in (.+?) (be|on) .*", r"\1", m.get("question", ""))
+            if city in shown or len(shown) >= 15:
+                continue
+            shown.add(city)
+            text = (m.get("description") or "") + " || " + (m.get("resolutionSource") or "")
+            hit = re.search(r"(?i)(station|airport|wunderground|weather\.gov|noaa).{0,160}", text)
+            print(f"  {city[:28]:<28} bucket={b} station={st} day={day}\n"
+                  f"      {(hit.group(0) if hit else text[:200])!r}")
 
     # snapshot: last prices of open markets vs fair
     snap, out_band = [], 0
     for m, (lo, hi, unit), st, day, toks in cands:
         if m.get("closed"):
             continue
-        vals = fc.members(st, unit, day)
+        vals = fc.members(st, unit, day, temp_kind(m.get("question")))
         prices = parse_list(m.get("outcomePrices"))
         if not (vals and prices):
             continue
@@ -216,7 +233,7 @@ def main():
     # flow
     rows, t0 = [], time.time()
     for i, (m, (lo, hi, unit), st, day, toks) in enumerate(cands):
-        vals = fc.members(st, unit, day)
+        vals = fc.members(st, unit, day, temp_kind(m.get("question")))
         if not vals:
             continue
         p_lo, p_mid, p_hi = band(vals, lo, hi, unit)
@@ -237,7 +254,7 @@ def main():
             elif 0.10 <= y < 0.70 and p_lo - y >= args.min_edge:
                 side, edge, cost = "YES", p_lo - y, sz * y
             if side:
-                rows.append({"ts": ts, "station": st, "date": day.isoformat(), "bucket": m.get("groupItemTitle"),
+                rows.append({"ts": ts, "station": st, "kind": temp_kind(m.get("question")), "date": day.isoformat(), "bucket": m.get("groupItemTitle"),
                              "question": m.get("question"), "side": side, "yes_price": round(y, 4),
                              "fair_mid": round(p_mid, 4), "edge_per_share": round(edge, 4), "shares": sz,
                              "cost_usd": round(cost, 2), "edge_usd": round(edge * sz, 2)})
