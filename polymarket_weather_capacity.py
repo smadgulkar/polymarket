@@ -106,18 +106,23 @@ class Airports:
 
     def __init__(self):
         if not os.path.exists(self.CACHE):
+            print("  downloading airport list (one time, ~12 MB) ...", flush=True)
             r = SESSION.get(self.URL, timeout=120)
             r.raise_for_status()
             open(self.CACHE, "w", encoding="utf-8").write(r.text)
-        rows = list(csv.DictReader(open(self.CACHE, encoding="utf-8")))
+        # stream the 86k rows and keep only airports with scheduled-size traffic: holding the whole
+        # file as dicts doesn't fit next to the engine on a 512 MB droplet
         self.by_code, self.by_name = {}, {}
-        for a in rows:
-            code = a["icao_code"] or a["gps_code"] or a["ident"]
-            ll = (float(a["latitude_deg"]), float(a["longitude_deg"]))
-            if code:
-                self.by_code.setdefault(code, ll)
-            if a["type"] in ("large_airport", "medium_airport"):
+        with open(self.CACHE, encoding="utf-8") as f:
+            for a in csv.DictReader(f):
+                if a["type"] not in ("large_airport", "medium_airport"):
+                    continue
+                code = a["icao_code"] or a["gps_code"] or a["ident"]
+                ll = (float(a["latitude_deg"]), float(a["longitude_deg"]))
+                if code:
+                    self.by_code.setdefault(code, ll)
                 self.by_name.setdefault(norm_name(a["name"]), (code, ll))
+        print(f"  airport list: {len(self.by_name):,} airports indexed", flush=True)
 
     def locate(self, station):
         """-> (label, (lat, lon)) or None."""
