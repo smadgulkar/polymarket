@@ -55,3 +55,5 @@ weather_capacity_trades.csv
 ourairports.csv
 weather_accuracy_trades.csv
 kalshi_capacity_trades.csv
+kalshi_cache/
+kalshi_*.db
