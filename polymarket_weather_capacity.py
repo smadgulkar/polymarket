@@ -36,17 +36,18 @@ Run (where Polymarket is reachable):
 import argparse
 import csv
 import math
+import os
 import re
 import statistics
 import sys
 import time
+import unicodedata
 from datetime import datetime, timedelta, timezone
 
 from polymarket_capacity import gamma_markets, market_trades
-from polymarket_engine import get_json, parse_iso, parse_list, to_float, now_utc, resolve_tags, tokens_of
+from polymarket_engine import SESSION, get_json, parse_iso, parse_list, to_float, now_utc, resolve_tags, tokens_of
 
 ENSEMBLE = "https://ensemble-api.open-meteo.com/v1/ensemble"
-STATIONS = "https://aviationweather.gov/api/data/stationinfo"
 MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july",
                                       "august", "september", "october", "november", "december"], 1)}
 SIGMAS = (1.0, 1.75, 2.5)
@@ -74,13 +75,70 @@ def parse_bucket(text):
 
 
 def parse_station(text):
-    """ICAO code from the resolution text/URLs (weather.gov ...site=KLGA, wunderground .../KLGA)."""
+    """Settlement station: an ICAO code from URLs (weather.gov ...site=KLGA, wunderground .../KLGA),
+    'name:<airport name>' from 'NOAA at the <name> Station', or 'HKO' for the Hong Kong Observatory."""
     for pat in (r"site=([A-Z][A-Z0-9]{3})\b", r"/history/daily/[^\s\"')]*?/([A-Z][A-Z0-9]{3})\b",
                 r"\(([A-Z][A-Z0-9]{3})\)", r"\b(K[A-Z]{3})\b"):
         m = re.search(pat, text or "")
         if m:
             return m.group(1)
+    m = re.search(r"NOAA at the (.+?) Station\b", text or "")
+    if m:
+        return "name:" + m.group(1).strip()
+    if "weather.gov.hk" in (text or "") or "Hong Kong Observatory" in (text or ""):
+        return "HKO"
     return None
+
+
+def norm_name(s):
+    """'Adolfo Suárez Madrid–Barajas Airport' -> 'adolfo suarez madrid barajas'."""
+    s = re.sub(r"[^\w\s]", " ", s)  # punctuation incl. en-dashes -> space, before accents are stripped
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
+    s = re.sub(r"\b(international|intl|airport|arpt|airfield|aeroporto|aeropuerto|aeroport)\b", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+class Airports:
+    """OurAirports public dataset: ICAO codes, names and coordinates for every airport."""
+    URL = "https://davidmegginson.github.io/ourairports-data/airports.csv"
+    CACHE = "ourairports.csv"
+    HKO = (22.3019, 114.1742)  # Hong Kong Observatory HQ, Tsim Sha Tsui
+
+    def __init__(self):
+        if not os.path.exists(self.CACHE):
+            r = SESSION.get(self.URL, timeout=120)
+            r.raise_for_status()
+            open(self.CACHE, "w", encoding="utf-8").write(r.text)
+        rows = list(csv.DictReader(open(self.CACHE, encoding="utf-8")))
+        self.by_code, self.by_name = {}, {}
+        for a in rows:
+            code = a["icao_code"] or a["gps_code"] or a["ident"]
+            ll = (float(a["latitude_deg"]), float(a["longitude_deg"]))
+            if code:
+                self.by_code.setdefault(code, ll)
+            if a["type"] in ("large_airport", "medium_airport"):
+                self.by_name.setdefault(norm_name(a["name"]), (code, ll))
+
+    def locate(self, station):
+        """-> (label, (lat, lon)) or None."""
+        if station == "HKO":
+            return "HKO", self.HKO
+        if not station.startswith("name:"):
+            return (station, self.by_code[station]) if station in self.by_code else None
+        key = norm_name(station[5:])
+        if key in self.by_name:
+            return self.by_name[key]
+        words = set(key.split())
+        # every word of the settlement name inside an airport's name ('malpensa' in 'milan malpensa'):
+        # take the shortest such name, i.e. the closest fit
+        subset = [(k, v) for k, v in self.by_name.items() if words and words <= set(k.split())]
+        if subset:
+            return min(subset, key=lambda kv: len(kv[0]))[1]
+        best = max(self.by_name.items(), key=lambda kv: len(words & set(kv[0].split())) /
+                   max(len(words | set(kv[0].split())), 1), default=None)
+        if best and len(words & set(best[0].split())) / max(len(words | set(best[0].split())), 1) >= 0.6:
+            return best[1]
+        return None
 
 
 def parse_date(question, end):
@@ -110,12 +168,13 @@ class Forecasts:
         self.coords, self.cache = {}, {}
 
     def load_stations(self, ids):
-        ids = sorted(set(ids) - set(self.coords))
-        for i in range(0, len(ids), 40):
-            d = get_json(STATIONS, params={"ids": ",".join(ids[i:i + 40]), "format": "json"}) or []
-            for s in d if isinstance(d, list) else []:
-                if s.get("icaoId") and s.get("lat") is not None:
-                    self.coords[s["icaoId"]] = (s["lat"], s["lon"])
+        """Resolve station ids/names to coordinates; self.label maps them to an ICAO-style label."""
+        ap = Airports()
+        self.label = getattr(self, "label", {})
+        for s in set(ids) - set(self.coords):
+            hit = ap.locate(s)
+            if hit:
+                self.label[s], self.coords[s] = hit
 
     def members(self, station, unit, day, kind="max"):
         """Ensemble daily-max (or daily-min) values for that station-local date, or None."""
@@ -212,7 +271,7 @@ def main():
     # snapshot: last prices of open markets vs fair
     snap, out_band = [], 0
     for m, (lo, hi, unit), st, day, toks in cands:
-        if m.get("closed"):
+        if m.get("closed") or day <= now.date():  # same-day markets already know part of the day
             continue
         vals = fc.members(st, unit, day, temp_kind(m.get("question")))
         prices = parse_list(m.get("outcomePrices"))
@@ -254,7 +313,7 @@ def main():
             elif 0.10 <= y < 0.70 and p_lo - y >= args.min_edge:
                 side, edge, cost = "YES", p_lo - y, sz * y
             if side:
-                rows.append({"ts": ts, "station": st, "kind": temp_kind(m.get("question")), "date": day.isoformat(), "bucket": m.get("groupItemTitle"),
+                rows.append({"ts": ts, "station": fc.label.get(st, st), "kind": temp_kind(m.get("question")), "date": day.isoformat(), "bucket": m.get("groupItemTitle"),
                              "question": m.get("question"), "side": side, "yes_price": round(y, 4),
                              "fair_mid": round(p_mid, 4), "edge_per_share": round(edge, 4), "shares": sz,
                              "cost_usd": round(cost, 2), "edge_usd": round(edge * sz, 2)})
