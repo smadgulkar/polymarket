@@ -60,11 +60,13 @@ these numbers before --live.
 """
 
 import argparse
+import csv
 import json
 import math
 import os
 import signal
 import sqlite3
+import statistics
 import sys
 import time
 from datetime import datetime, timezone, timedelta
@@ -264,9 +266,12 @@ class Store:
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
         # positions predating YES-side trading are all NO
-        if "side" not in {r["name"] for r in self.db.execute("pragma table_info(positions)")}:
+        cols = {r["name"] for r in self.db.execute("pragma table_info(positions)")}
+        if "side" not in cols:
             self.db.execute("alter table positions add column side text default 'NO'")
-            self.db.commit()
+        if "exit_reason" not in cols:  # positions closed before this column existed read as unknown
+            self.db.execute("alter table positions add column exit_reason text")
+        self.db.commit()
 
     def q(self, sql, *a):
         return self.db.execute(sql, a).fetchall()
@@ -675,8 +680,8 @@ class Engine:
             if res is not None:
                 payout = float(res) if side == "YES" else 1.0 - res
                 self.b.settle(p, payout)
-                self.s.x("update positions set status='closed', exit_value=?, closed=? where token=?",
-                         p["shares"] * payout, now_utc().isoformat(), p["token"])
+                self.s.x("update positions set status='closed', exit_value=?, closed=?, exit_reason=? where token=?",
+                         p["shares"] * payout, now_utc().isoformat(), "SETTLED", p["token"])
                 log(f"SETTLED {'WIN ' if payout else 'LOSS'} {side} pnl={p['shares'] * payout - p['cost']:+.2f}"
                     f"  {p['question'][:70]}")
                 continue
@@ -727,8 +732,8 @@ class Engine:
         left = p["shares"] - sold
         cost_sold = p["cost"] * sold / p["shares"]
         if left <= 0.01:
-            self.s.x("update positions set status='closed', exit_value=?, closed=? where token=?",
-                     sold * px, now_utc().isoformat(), p["token"])
+            self.s.x("update positions set status='closed', exit_value=?, closed=?, exit_reason=? where token=?",
+                     sold * px, now_utc().isoformat(), reason.split()[0], p["token"])
         else:
             self.s.x("update positions set shares=?, cost=? where token=?", left, p["cost"] - cost_sold, p["token"])
             self.s.put("partial_pnl", self.s.get("partial_pnl", 0.0) + sold * px - cost_sold)
@@ -897,6 +902,60 @@ class Engine:
             + (f"  HALTED: {self.s.get('halted')}" if halted else ""))
 
 
+def history(store, csv_path="trade_history.csv"):
+    """Start, money in, every closed trade in order with a running total, and where it stands now."""
+    eq = store.q("select * from equity order by ts")
+    deps = store.get("deposits", [])
+    closed = store.q("select * from positions where status='closed' order by closed")
+    opn = store.open_positions()
+    if not eq:
+        print("no equity history yet")
+        return
+    start, last = eq[0], eq[-1]
+    added = sum(d["amount"] for d in deps)
+    invested = start["total"] + added
+    print(f"started      {start['ts'][:16]} UTC with ${start['total']:.2f} "
+          f"(first equity snapshot{'; before that, live tests' if closed and closed[0]['opened'] < start['ts'] else ''})")
+    for d in deps:
+        print(f"deposit      {d['ts'][:16]} UTC  +${d['amount']:.2f}  {d.get('note', '')}")
+    days = (parse_iso(last["ts"]) - parse_iso(start["ts"])).total_seconds() / 86400
+    print(f"now          {last['ts'][:16]} UTC  equity ${last['total']:.2f}  (cash ${last['cash']:.2f}, "
+          f"positions ${last['position_value']:.2f})")
+    print(f"money in     ${invested:.2f}   gain ${last['total'] - invested:+.2f} "
+          f"({(last['total'] / invested - 1) if invested else 0:+.1%}) over {days:.1f} days   "
+          f"peak ${max(e['total'] for e in eq):.2f}   low ${min(e['total'] for e in eq):.2f}")
+
+    rows, running = [], 0.0
+    print(f"\n{'#':>3} {'opened':<16} {'closed':<16} {'side':<4} {'cost':>7} {'exit':>7} {'pnl':>7} "
+          f"{'total':>7} {'held':>7} {'how':<9} market")
+    for i, p in enumerate(closed, 1):
+        pnl = p["exit_value"] - p["cost"]
+        running += pnl
+        held = (parse_iso(p["closed"]) - parse_iso(p["opened"])).total_seconds() / 3600
+        how = p["exit_reason"] or "-"
+        print(f"{i:>3} {p['opened'][:16]:<16} {p['closed'][:16]:<16} {side_of(p):<4} {p['cost']:>7.2f} "
+              f"{p['exit_value']:>7.2f} {pnl:>+7.2f} {running:>+7.2f} {held:>6.1f}h {how:<9} {p['question'][:55]}")
+        rows.append({"n": i, "opened": p["opened"], "closed": p["closed"], "category": p["category"],
+                     "side": side_of(p), "question": p["question"], "shares": p["shares"], "cost": round(p["cost"], 4),
+                     "exit_value": round(p["exit_value"], 4), "pnl": round(pnl, 4), "running_pnl": round(running, 4),
+                     "hours_held": round(held, 2), "exit": how})
+    partial = store.get("partial_pnl", 0.0)
+    if partial:
+        print(f"    plus partial sells: {partial:+.2f}")
+    wins = sum(1 for p in closed if p["exit_value"] > p["cost"])
+    if closed:
+        print(f"\n{len(closed)} closed, {wins} won ({wins / len(closed):.0%}), realized {running + partial:+.2f}, "
+              f"median hold {statistics.median([r['hours_held'] for r in rows]):.1f}h")
+    for p in opn:
+        print(f"open: {side_of(p)} {p['shares']:.1f} sh, cost {p['cost']:.2f}, opened {p['opened'][:16]}  {p['question'][:60]}")
+    if rows:
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            w.writeheader()
+            w.writerows(rows)
+        print(f"\nfull trade list in {csv_path}")
+
+
 def report(store):
     closed = store.q("select * from positions where status='closed'")
     opn = store.open_positions()
@@ -931,6 +990,11 @@ def main():
     ap.add_argument("--poll", type=int, default=300, help="seconds between cycles")
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--history", action="store_true",
+                    help="start date, money in, every closed trade with running P&L (also trade_history.csv)")
+    ap.add_argument("--deposit", type=float, metavar="USD",
+                    help="record money you added (or negative: withdrew) so returns aren't overstated")
+    ap.add_argument("--note", default="", help="with --deposit: free-text note")
     ap.add_argument("--resume", action="store_true", help="clear a kill-switch halt and continue")
     ap.add_argument("--close", metavar="MARKET_ID", help="sell this position (or 'all') at the bid and exit")
     ap.add_argument("--close-min-price", type=float, help="with --close: don't sell below this price")
@@ -993,6 +1057,15 @@ def main():
         store.put("day", None)
         store.put("breach_strikes", 0)
         print("kill switch cleared")
+    if args.deposit is not None:
+        deps = store.get("deposits", []) + [{"ts": now_utc().isoformat(), "amount": args.deposit, "note": args.note}]
+        store.put("deposits", deps)
+        print(f"recorded {'deposit' if args.deposit >= 0 else 'withdrawal'} of ${abs(args.deposit):.2f}; "
+              f"total added since start ${sum(d['amount'] for d in deps):.2f}")
+        return
+    if args.history:
+        history(store)
+        return
     if args.report:
         report(store)
         return
