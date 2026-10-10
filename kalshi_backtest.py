@@ -156,6 +156,8 @@ def opportunities(data, trades, hist, surfaces, a):
     """Every fill our resting quotes would have received, before bankroll limits."""
     opps = []
     for m in data["markets"]:
+        if m["series"] not in a.series:
+            continue
         p, surf, h = m["parsed"], surfaces[m["asset"]], hist[m["asset"]]
         for t, y, n, taker in trades.get(m["ticker"], []):
             hours = (m["close"] - t) / 3600
@@ -169,7 +171,7 @@ def opportunities(data, trades, hist, surfaces, a):
             if taker == "yes" and a.min_yes <= y < a.max_yes:
                 ask = math.ceil((hi + a.edge) * 100) / 100   # our resting YES ask = buy NO at 1-ask
                 if y >= ask:
-                    opps.append({"t": t, "m": m, "side": "NO", "price": round(1 - ask, 2), "q": hi,
+                    opps.append({"t": t, "m": m, "side": "NO", "price": round(1 - ask, 2), "q": 1 - hi,
                                  "n": n * a.share, "hours": hours, "spot": spot_q})
             elif taker == "no" and p["kind"] == "between" and hours >= a.yes_min_hours \
                     and a.yes_min <= y < a.yes_max:
@@ -275,13 +277,14 @@ def report(a, data, opps, final, fills, closed, day_eq, max_dd):
         won = (o["m"]["result"] == "yes") == (o["side"] == "YES")
         cost = o["n"] * o["price"]
         b = "<1h" if o["hours"] < 1 else "1-6h" if o["hours"] < 6 else "6-12h" if o["hours"] < 12 else "12h+"
-        hb[b][0] += cost
-        hb[b][1] += o["n"] * (1.0 if won else 0.0) - cost
-    print("  flow at our prices (no bankroll limit), real outcomes, by time left:")
-    for b in ("<1h", "1-6h", "6-12h", "12h+"):
+        for k in (b, f"{o['side']} {b}"):
+            hb[k][0] += cost
+            hb[k][1] += o["n"] * (1.0 if won else 0.0) - cost
+    print("  flow at our prices (no bankroll limit), real outcomes, by time left and side:")
+    for b in ("<1h", "1-6h", "6-12h", "12h+", "NO <1h", "NO 1-6h", "NO 6-12h", "NO 12h+", "YES 12h+"):
         c, p = hb[b]
         if c:
-            print(f"    {b:<6} ${c:>12,.0f}/{len(day_eq) or 1}d   P&L {p:>+12,.0f}   {p / c:+.2%} per $")
+            print(f"    {b:<9} ${c:>12,.0f}   P&L {p:>+12,.0f}   {p / c:+.2%} per $")
 
 
 def main():
@@ -290,6 +293,7 @@ def main():
     ap.add_argument("--refresh", action="store_true", help="re-list markets (trades stay cached)")
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--bankroll", type=float, default=1000)
+    ap.add_argument("--series", nargs="+", default=list(SERIES), help="series to trade (data for all is cached)")
     ap.add_argument("--edge", type=float, default=0.02)
     ap.add_argument("--lag-min", type=float, default=2.0, help="minutes our resting quote lags the market")
     ap.add_argument("--share", type=float, default=0.25, help="share of each crossing trade we'd get")
