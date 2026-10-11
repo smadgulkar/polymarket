@@ -386,14 +386,15 @@ class Engine:
         return None
 
     def cluster(self, p, side):
+    # BTC and ETH move together (2026-09-21: +7% / +6% in a day), so up/down is one cluster across assets
         a, spot = p["asset"], self.surfaces[p["asset"]].spot
         if p["kind"] == "above":
-            return f"{a}:down" if side == "YES" else f"{a}:up"
+            return "crypto:down" if side == "YES" else "crypto:up"
         if p["kind"] == "below":
-            return f"{a}:up" if side == "YES" else f"{a}:down"
+            return "crypto:up" if side == "YES" else "crypto:down"
         if side == "YES":
             return f"{a}:range"
-        return f"{a}:up" if p["k1"] > spot else f"{a}:down" if p["k2"] < spot else f"{a}:pin"
+        return "crypto:up" if p["k1"] > spot else "crypto:down" if p["k2"] < spot else f"{a}:pin"
 
     def universe(self):
         out = {}
@@ -610,7 +611,8 @@ def main():
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--flatten", action="store_true", help="cancel all orders and exit all positions now")
     ap.add_argument("--resume", action="store_true", help="clear a kill-switch halt")
-    ap.add_argument("--series", nargs="+", default=list(SERIES))
+    ap.add_argument("--series", nargs="+", default=["KXBTCD", "KXETHD"],
+                    help="range series (KXBTC/KXETH) lost money in the backtest; above/below only by default")
     ap.add_argument("--allow-maker-fees", action="store_true")
     ap.add_argument("--balance-includes-resting", action="store_true",
                     help="set if a demo test shows Kalshi's balance does NOT drop when a buy order rests")
@@ -627,7 +629,8 @@ def main():
     ap.add_argument("--kelly", type=float, default=0.25)
     ap.add_argument("--cap-market", type=float, default=0.05)
     ap.add_argument("--cap-event", type=float, default=0.15)
-    ap.add_argument("--cap-cluster", type=float, default=0.30)
+    ap.add_argument("--cap-cluster", type=float, default=0.15,
+                    help="cap per direction across BTC+ETH; bounds a 2026-09-21-style rally to about this loss")
     ap.add_argument("--cap-gross", type=float, default=0.90)
     ap.add_argument("--max-orders", type=int, default=40, help="new orders per cycle")
     ap.add_argument("--daily-stop", type=float, default=0.10)

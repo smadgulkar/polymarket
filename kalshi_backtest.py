@@ -96,18 +96,21 @@ def maker_fee(rate, price, n):
 
 
 # ----------------------------------------------------------------- data (cached)
-def load_markets(days, refresh):
+def load_markets(days, refresh, series=None, end_days_ago=0):
+    """Settled markets closing between `days` and `end_days_ago` days ago (end_days_ago > 0 keeps a
+    recent stretch out of the sample, for out-of-sample tests)."""
     os.makedirs(CACHE, exist_ok=True)
-    path = os.path.join(CACHE, f"markets_{days}d.json")
+    series = series or list(SERIES)
+    path = os.path.join(CACHE, f"markets_{days}d_{end_days_ago}_{'-'.join(sorted(series))}.json")
     if os.path.exists(path) and not refresh:
         return json.load(open(path))
     now = int(time.time())
     sess, out, fees = session(), [], {}
-    for ser, asset in SERIES.items():
+    for ser, asset in ((s_, SERIES[s_]) for s_ in series):
         s = (get(sess, f"/series/{ser}", {}) or {}).get("series", {})
         fees[ser] = MAKER_FEE_RATE.get(s.get("fee_type"), 0.0) * float(s.get("fee_multiplier") or 1)
         ms = paged(sess, "/markets", "markets", {"series_ticker": ser, "min_close_ts": now - days * 86400,
-                                                  "max_close_ts": now, "limit": 1000})
+                                                  "max_close_ts": now - end_days_ago * 86400, "limit": 1000})
         keep = [m for m in ms if m.get("result") in ("yes", "no") and float(m.get("volume_fp") or 0) > 0
                 and parsed_of(m, asset)]
         out += [{"ticker": m["ticker"], "event": m["event_ticker"], "series": ser, "asset": asset,
@@ -142,14 +145,15 @@ def load_trades(markets, workers):
 
 # ----------------------------------------------------------------- simulation
 def cluster(p, side, spot):
+    # BTC and ETH move together (2026-09-21: +7% / +6% in a day), so up/down is one cluster across assets
     a = p["asset"]
     if p["kind"] == "above":
-        return f"{a}:down" if side == "YES" else f"{a}:up"
+        return "crypto:down" if side == "YES" else "crypto:up"
     if p["kind"] == "below":
-        return f"{a}:up" if side == "YES" else f"{a}:down"
+        return "crypto:up" if side == "YES" else "crypto:down"
     if side == "YES":
         return f"{a}:range"
-    return f"{a}:up" if p["k1"] > spot else f"{a}:down" if p["k2"] < spot else f"{a}:pin"
+    return "crypto:up" if p["k1"] > spot else "crypto:down" if p["k2"] < spot else f"{a}:pin"
 
 
 def opportunities(data, trades, hist, surfaces, a):
@@ -290,6 +294,8 @@ def report(a, data, opps, final, fills, closed, day_eq, max_dd):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--days", type=int, default=7)
+    ap.add_argument("--end-days-ago", type=int, default=0,
+                    help="leave the most recent N days out (out-of-sample tests on older data)")
     ap.add_argument("--refresh", action="store_true", help="re-list markets (trades stay cached)")
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--bankroll", type=float, default=1000)
@@ -314,7 +320,7 @@ def main():
     a = ap.parse_args()
 
     print(f"loading {a.days} days of settled Kalshi crypto markets ...", flush=True)
-    data = load_markets(a.days, a.refresh)
+    data = load_markets(a.days, a.refresh, a.series, a.end_days_ago)
     trades = load_trades(data["markets"], a.workers)
     since = min(m["close"] for m in data["markets"]) - 3 * 86400
     surfaces = {x: CL.Surface(x) for x in set(SERIES.values())}
