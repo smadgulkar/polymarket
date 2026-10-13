@@ -107,13 +107,14 @@ def market_trades(cid, since_ts, max_pages):
     return [t for t in out if int(float(t.get("timestamp", 0))) >= since_ts]
 
 
-def fair_band(surf, parsed, days_left, spot_then, vh, vb):
-    """Cautious P(YES) band at a past moment: sticky moneyness on today's surface."""
+def fair_band(surf, parsed, days_left, spot_then, vh, vb, vol_scale=1.0):
+    """Cautious P(YES) band at a past moment: sticky moneyness on today's surface, with the whole
+    surface scaled by vol_scale (e.g. DVOL then / DVOL now)."""
     if days_left <= 0 or not spot_then:
         return None
     scale = surf.spot / spot_then  # move the strikes, not the surface: K/spot_then == (K*scale)/spot_now
     p = dict(parsed, k1=parsed["k1"] * scale, k2=parsed["k2"] * scale if parsed["k2"] else None)
-    ps = [CL.model_prob(surf, p, days_left / 365, m) for m in (1 - vh, 1.0, 1 + vb)]
+    ps = [CL.model_prob(surf, p, days_left / 365, m * vol_scale) for m in (1 - vh, 1.0, 1 + vb)]
     return min(ps), ps[1], max(ps)
 
 

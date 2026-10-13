@@ -41,6 +41,7 @@ from curl_cffi import requests
 
 import polymarket_crypto_longshots as CL
 from polymarket_capacity import spot_history, spot_at, fair_band
+from polymarket_engine import get_json
 
 API = "https://api.elections.kalshi.com/trade-api/v2"
 SERIES = {"KXBTCD": "BTC", "KXETHD": "ETH", "KXBTC": "BTC", "KXETH": "ETH"}
@@ -156,7 +157,22 @@ def cluster(p, side, spot):
     return "crypto:up" if p["k1"] > spot else "crypto:down" if p["k2"] < spot else f"{a}:pin"
 
 
-def opportunities(data, trades, hist, surfaces, a):
+def dvol_history(asset, since_ms, until_ms):
+    """[(ts_seconds, dvol)] hourly closes of Deribit's implied-vol index."""
+    out, end = [], until_ms
+    while end > since_ms:
+        d = get_json("https://www.deribit.com/api/v2/public/get_volatility_index_data",
+                     params={"currency": asset, "start_timestamp": since_ms, "end_timestamp": end,
+                             "resolution": "3600"})
+        r = (d or {}).get("result") or {}
+        out += [(int(row[0]) // 1000, float(row[4])) for row in r.get("data") or []]
+        end = r.get("continuation")
+        if not end:
+            break
+    return sorted(set(out))
+
+
+def opportunities(data, trades, hist, surfaces, a, dvol=None):
     """Every fill our resting quotes would have received, before bankroll limits."""
     opps = []
     for m in data["markets"]:
@@ -168,7 +184,12 @@ def opportunities(data, trades, hist, surfaces, a):
             if not (a.min_hours <= hours <= a.max_hours):
                 continue
             spot_q = spot_at(h, t - a.lag_min * 60)          # what our resting quote was based on
-            band = fair_band(surf, p, hours / 24, spot_q, a.vol_haircut, a.vol_bump)
+            scale = 1.0
+            if dvol and dvol.get(m["asset"]):
+                dv = dvol[m["asset"]]
+                then = spot_at(dv, t - a.lag_min * 60)
+                scale = then / dv[-1][1] if then else 1.0
+            band = fair_band(surf, p, hours / 24, spot_q, a.vol_haircut, a.vol_bump, scale)
             if not band:
                 continue
             lo, mid, hi = band
@@ -315,7 +336,9 @@ def main():
     ap.add_argument("--kelly", type=float, default=0.25)
     ap.add_argument("--cap-market", type=float, default=0.05)
     ap.add_argument("--cap-event", type=float, default=0.15)
-    ap.add_argument("--cap-cluster", type=float, default=0.30)
+    ap.add_argument("--cap-cluster", type=float, default=0.15)
+    ap.add_argument("--no-dvol", action="store_true",
+                    help="price past days with today's IV as-is (default: scale it by DVOL then / DVOL now)")
     ap.add_argument("--cap-gross", type=float, default=0.90)
     a = ap.parse_args()
 
@@ -327,7 +350,12 @@ def main():
     hist = {x: spot_history(x, int(since * 1000), int(time.time() * 1000)) for x in surfaces}
     print(f"  {sum(len(v) for v in trades.values()):,} trades in {len(trades)} markets; "
           f"spot history {', '.join(f'{k} {len(v)}' for k, v in hist.items())} candles", flush=True)
-    opps = opportunities(data, trades, hist, surfaces, a)
+    dvol = None
+    if not a.no_dvol:
+        dvol = {x: dvol_history(x, int(since * 1000), int(time.time() * 1000)) for x in surfaces}
+        print("  DVOL " + ", ".join(f"{k} {min(r[1] for r in v):.0f}-{max(r[1] for r in v):.0f} (now {v[-1][1]:.0f})"
+                                    for k, v in dvol.items() if v), flush=True)
+    opps = opportunities(data, trades, hist, surfaces, a, dvol)
     final, fills, closed, day_eq, max_dd = simulate(data, opps, a)
     report(a, data, opps, final, fills, closed, day_eq, max_dd)
     print("\nnote: today's IV surface is applied to past days; a bigger --lag-min and smaller --share are the "
